@@ -1,0 +1,60 @@
+object MainScreen: TMainScreen
+  Left = 495
+  Height = 479
+  Top = 180
+  Width = 794
+  Caption = 'Paint alpha dark_moon_edition'
+  ClientHeight = 459
+  ClientWidth = 794
+  Color = clWhite
+  Menu = MainMenu
+  ParentBiDiMode = False
+  LCLVersion = '1.6.0.4'
+  object PaintField: TPaintBox
+    Cursor = crCross
+    Left = 0
+    Height = 440
+    Top = 0
+    Width = 794
+    Align = alClient
+    ParentColor = False
+    OnMouseDown = PaintFieldMouseDown
+    OnMouseMove = PaintFieldMouseMove
+    OnMouseUp = PaintFieldMouseUp
+    OnPaint = PaintFieldPaint
+  end
+  object LWidth: TTrackBar
+    Left = 0
+    Height = 19
+    Top = 440
+    Width = 794
+    Max = 250
+    Min = 1
+    OnChange = LWidthChange
+    Position = 1
+    Align = alBottom
+    TabOrder = 0
+  end
+  object MainMenu: TMainMenu
+    left = 65464
+    top = 80
+    object MenuFile: TMenuItem
+      Caption = 'File'
+      object MenuClear: TMenuItem
+        Caption = 'Clear'
+        OnClick = MenuClearClick
+      end
+      object MenuExit: TMenuItem
+        Caption = 'Exit'
+        OnClick = MenuExitClick
+      end
+    end
+    object MenuHelp: TMenuItem
+      Caption = 'Help'
+      object MenuAbout: TMenuItem
+        Caption = 'About'
+        OnClick = MenuAboutClick
+      end
+    end
+  end
+end
