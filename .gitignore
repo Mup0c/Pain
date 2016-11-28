@@ -1,5 +1,9 @@
 *.exe
-*.o
-*.bak
-*.obj
 
+*.o
+
+*.bak
+
+*.obj
+*.res
+lib/
