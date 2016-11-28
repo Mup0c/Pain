@@ -1,9 +1,9 @@
 *.exe
 
-*.o
 
 *.bak
 
 *.obj
 *.res
 lib/
+*.lps
