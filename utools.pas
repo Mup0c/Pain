@@ -22,16 +22,23 @@ type
     numOfVertices: integer;
     ParametersAvailable: boolean;
     WidthEdit: TSpinEdit;
+    RoundingXEdit: TSpinEdit;
+    RoundingYEdit: TSpinEdit;
     PenStyleEdit: TComboBox;
     BrushStyleEdit: TComboBox;
     NumOfVerticesEdit: TSpinEdit;
+    roundingRadiusX, roundingRadiusY: integer;
     function GetFigure: TFigure; virtual;
     procedure SetParams;
     procedure ToDefaultParams;
     procedure AddWidthEdit(APanel: TPanel); virtual;
+    procedure AddRoundingXEdit(APanel: TPanel); virtual;
+    procedure AddRoundingYEdit(APanel: TPanel); virtual;
     procedure AddBrushStyleEdit(APanel: TPanel);
     procedure AddPenStyleEdit(APanel: TPanel);
     procedure AddNumOfVerticesEdit(APanel: TPanel);
+    procedure RoundingXEditChange(Sender: TObject); virtual;
+    procedure RoundingYEditChange(Sender: TObject); virtual;
     procedure NumOfVerticesChange(Sender: TObject);
     procedure AddLabel(AName: String; APanel: TPanel);
     procedure WidthEditChange(Sender: TObject); virtual;
@@ -62,6 +69,12 @@ type
   end;
 
   TLineTool = class(TTool)
+    constructor Create;
+    procedure Init(APanel: TPanel); override;
+    procedure MouseDown(X, Y: Integer); override;
+  end;
+
+  TRoundRectTool = class(TTool)
     constructor Create;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
@@ -125,6 +138,8 @@ begin
   Figure.penStyle := penStyle;
   Figure.brushStyle := brushStyle;
   Figure.numOfVertices := numOfVertices;
+  Figure.roundingRadiusX := roundingRadiusX;
+  Figure.roundingRadiusY := roundingRadiusY;
 end;
 
 procedure TTool.ToDefaultParams;
@@ -133,6 +148,8 @@ begin
   penStyle := psSolid;
   brushStyle := bsSolid;
   numOfVertices := 3;
+  roundingRadiusX := 10;
+  roundingRadiusY := 10;
 end;
 
 procedure TTool.MouseMove(X, Y: Integer);
@@ -173,6 +190,51 @@ begin
     OnChange := @WidthEditChange;
   end;
   AddLabel('Thickness:', APanel);
+end;
+
+procedure TTool.RoundingXEditChange(Sender: TObject);
+begin
+  roundingRadiusX := RoundingXEdit.Value;
+end;
+
+procedure TTool.AddRoundingXEdit(APanel: TPanel);
+begin
+  RoundingXEdit := TSpinEdit.Create(APanel);
+  With RoundingXEdit do begin
+    Parent := APanel;
+    Left := 2;
+    Top := 2;
+    Align := altop;
+    MinValue := 0;
+    MaxValue := 1000;
+    Value := 10;
+    BorderSpacing.Around:= 5;
+    OnChange := @RoundingXEditChange;
+  end;
+  AddLabel('Rounding X:', APanel);
+end;
+
+
+procedure TTool.RoundingYEditChange(Sender: TObject);
+begin
+  roundingRadiusY := RoundingYEdit.Value;
+end;
+
+procedure TTool.AddRoundingYEdit(APanel: TPanel);
+begin
+  RoundingYEdit := TSpinEdit.Create(APanel);
+  With RoundingYEdit do begin
+    Parent := APanel;
+    Left := 2;
+    Top := 2;
+    Align := altop;
+    MinValue := 0;
+    MaxValue := 1000;
+    Value := 10;
+    BorderSpacing.Around:= 5;
+    OnChange := @RoundingYEditChange;
+  end;
+  AddLabel('Rounding Y:', APanel);
 end;
 
 procedure TTool.PenStyleEditChange(Sender: TObject);
@@ -320,6 +382,30 @@ end;
 procedure TEllipseTool.Init(APanel: TPanel);
 begin
   ParametersAvailable := true;
+  AddBrushStyleEdit(APanel);
+  AddPenStyleEdit(APanel);
+  AddWidthEdit(APanel);
+  ToDefaultParams;
+end;
+
+procedure TRoundRectTool.MouseDown(X, Y: Integer);
+begin
+  Figure := TRoundRect.Create;
+  SetParams;
+  Figure.AddPoint(X, Y, true);
+end;
+
+constructor TRoundRectTool.Create;
+begin
+  Inherited;
+  bmpName := 'icons/RoundRect.bmp';
+end;
+
+procedure TRoundRectTool.Init(APanel: TPanel);
+begin
+  ParametersAvailable := true;
+  AddRoundingYEdit(APanel);
+  AddRoundingXEdit(APanel);
   AddBrushStyleEdit(APanel);
   AddPenStyleEdit(APanel);
   AddWidthEdit(APanel);
@@ -479,6 +565,7 @@ initialization
 RegisterTool(TDragTool.Create);
 RegisterTool(TPolyLineTool.Create);
 RegisterTool(TRectangleTool.Create);
+RegisterTool(TRoundRectTool.Create);
 RegisterTool(TEllipseTool.Create);
 RegisterTool(TLineTool.Create);
 RegisterTool(TPolygonTool.Create);

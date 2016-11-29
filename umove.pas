@@ -81,7 +81,7 @@ begin
   tempCrds := ScrToWorld(APosX,APosY);
   Scale := EnsureRange(AScale, 0.01, 25);
   CanvasMove(
-    tempCrds.X - ScrToWorldCrds(APosX,APosY).X,
+    tempCrds.X - ScrToWorld(APosX,APosY).X,
     tempCrds.Y - ScrToWorld(APosX,APosY).Y);
 end;
 

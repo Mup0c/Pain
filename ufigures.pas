@@ -17,6 +17,7 @@ type
     penStyle: TFPPenStyle;
     brushStyle: TFPBrushStyle;
     numOfVertices: integer;
+    roundingRadiusX,  roundingRadiusY: integer;
     bounds: TDoubleRect;
     function GetBounds: TDoubleRect; virtual;
     procedure Draw(Canvas: TCanvas); virtual;
@@ -50,6 +51,10 @@ type
     procedure DrawFigure(Canvas: TCanvas); override;
   end;
 
+  TRoundRect = class(TTwoPointFigure)
+    procedure DrawFigure(Canvas: TCanvas); override;
+  end;
+
   TPolygon = class(TTwoPointFigure)
     Vertices: array of TDoublePoint;
     function GetBounds: TDoubleRect; override;
@@ -74,17 +79,21 @@ begin
 end;
 
 procedure TPolyline.AddPoint(X, Y: Integer; first: Boolean);
+var
+  wrldx, wrldy: double;
 begin
+  wrldx:= ScrToWorld(X, Y).X;
+  wrldy:= ScrToWorld(X, Y).Y;
   SetLength(Vertices, Length(Vertices) + 1);
   Vertices[High(Vertices)] := ScrToWorld(X, Y);
-  If ScrToWorld(X, Y).X < bounds.Left then
-    bounds.Left := ScrToWorld(X, Y).X;
-  If ScrToWorld(X, Y).Y < bounds.Top then
-    bounds.Top := ScrToWorld(X, Y).Y;
-  If ScrToWorld(X, Y).X > bounds.Right then
-    bounds.Right := ScrToWorld(X, Y).X;
-  If ScrToWorld(X, Y).Y > bounds.Bottom then
-    bounds.Bottom := ScrToWorld(X, Y).Y;
+  If wrldx < bounds.Left then
+    bounds.Left := wrldx;
+  If wrldy < bounds.Top then
+    bounds.Top := wrldy;
+  If wrldx > bounds.Right then
+    bounds.Right := wrldx;
+  If wrldy > bounds.Bottom then
+    bounds.Bottom := wrldy;
 end;
 
 procedure TTwoPointFigure.AddPoint(X, Y: Integer; first: Boolean);
@@ -120,6 +129,11 @@ begin
   Canvas.Frame(WorldToScrCrds(bounds));
 end;
 
+procedure TRoundRect.DrawFigure(Canvas: TCanvas);
+begin
+  Canvas.RoundRect(WorldToScrCrds(bounds),roundingRadiusX,roundingRadiusY);
+end;
+
 procedure TPolygon.DrawFigure(Canvas: TCanvas);
 var
   i: Integer;
@@ -141,17 +155,22 @@ function TPolygon.Getbounds: TDoubleRect;
 var
   bnds: TDoubleRect;
   i: Integer;
+  x, y: double;
 begin
-  bnds := imageBounds;
+  x := Vertices[0].x;
+  y := Vertices[0].y;
+  bnds := DoubleRect(x,y,x,y);
   for i := 0 to numOfVertices - 1 do begin
-    If Vertices[i].x < bnds.Left then
-      bnds.Left := Vertices[i].X;
-    If Vertices[i].Y < bnds.Top then
-      bnds.Top := Vertices[i].Y;
-    If Vertices[i].x > bnds.Right then
-      bnds.Right := Vertices[i].X;
-    If Vertices[i].Y > bnds.Bottom then
-      bnds.Bottom := Vertices[i].Y;
+    x := Vertices[i].x;
+    y := Vertices[i].y;
+    If x < bnds.Left then
+      bnds.Left := x;
+    If y < bnds.Top then
+      bnds.Top := y;
+    If x > bnds.Right then
+      bnds.Right := x;
+    If y > bnds.Bottom then
+      bnds.Bottom := y;
   end;
   Result := bnds;
 end;
