@@ -170,8 +170,14 @@ begin
       Tag := i;
       Width := 32;
       Height := 32;
-      Left := 8;
-      Top := i*40 + 8;
+      if (i+1) mod 2 = 1 then begin
+        Left := 8;
+        Top := (i div 2)*40 + 8;
+      end else
+      begin
+        Left := 56;
+        Top := ((i-1) div 2)*40 + 8;
+      end;
       OnClick := @ToolClick;
       Glyph := ToolIcon;
     end;
