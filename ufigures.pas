@@ -12,17 +12,19 @@ type
 
   TFigure = class
     thickness: integer;
-    penColor: TColor;
+    penColor: TColor;                                          ////////
     brushColor: TColor;
     penStyle: TFPPenStyle;
     brushStyle: TFPBrushStyle;
     numOfVertices: integer;
     roundingRadiusX,  roundingRadiusY: integer;
     bounds: TDoubleRect;
+    Selected: boolean;
     function GetBounds: TDoubleRect; virtual;
     procedure Draw(Canvas: TCanvas); virtual;
     procedure DrawFigure(Canvas: TCanvas); virtual; abstract;
     procedure AddPoint(X, Y: Integer; first: Boolean); virtual; abstract;
+    function IsIntersect(ARect: TDoubleRect): boolean;
   end;
 
   TTwoPointFigure = class(TFigure)
@@ -61,7 +63,16 @@ type
     procedure DrawFigure(Canvas: TCanvas); override;
   end;
 
+var
+  Figures: array of TFigure;
+
 implementation
+
+function TFigure.IsIntersect(ARect: TDoubleRect): boolean;
+begin
+  result := not ((min(bounds.Top,bounds.Bottom) > max(ARect.Top,ARect.Bottom)) or (max(bounds.Top,bounds.Bottom) < min(ARect.Top,ARect.Bottom))
+              or (max(bounds.Left,bounds.Right) < min(ARect.Left,ARect.Right)) or (min(bounds.Left,bounds.Right) > max(ARect.Left,ARect.Right)));
+end;
 
 procedure TFigure.Draw(Canvas: TCanvas);
 begin

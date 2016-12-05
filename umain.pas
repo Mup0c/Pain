@@ -82,7 +82,6 @@ type
 var
   MainScreen: TMainScreen;
   ScrollsChangingByCode, EditValueChangedByCode, isMouseDown: boolean;
-  Figures: array of TFigure;
   CurrentTool: TTool;
   colors: array of array of TColor;
   paletteRows: integer = 2;
@@ -352,6 +351,23 @@ begin
   for i := 0 to High(Figures) do
     begin
       Figures[i].Draw(PaintField.Canvas);
+      if Figures[i].Selected then begin
+        With PaintField.Canvas do begin
+          Brush.Color := clRed;
+          Pen.Color := clRed;
+          Pen.Width := PaintField.Canvas.Pen.Width + 2;
+          Brush.Style := bsDiagCross;
+          Pen.Style := psDash;
+        end;
+        Figures[i].DrawFigure(PaintField.Canvas);
+        With PaintField.Canvas do begin
+          Brush.Color := clBlue;
+          Pen.Color := clBlue;
+          Pen.Style := psDot;
+          Brush.Style := bsCross;
+        end;
+        Figures[i].DrawFigure(PaintField.Canvas);
+      end;
     end;
   EditValueChangedByCode := true;
   ScaleEdit.Value := Scale * 100;

@@ -1,7 +1,7 @@
 object MainScreen: TMainScreen
-  Left = 807
+  Left = 1229
   Height = 723
-  Top = 271
+  Top = 286
   Width = 1170
   Caption = 'Paint alpha dark_moon_edition'
   ClientHeight = 703
@@ -18,8 +18,8 @@ object MainScreen: TMainScreen
     AnchorSideBottom.Control = HorizontalScrollBar
     Cursor = crSizeAll
     Left = 96
-    Height = 651
-    Top = -5
+    Height = 646
+    Top = 0
     Width = 1059
     Align = alCustom
     Anchors = [akTop, akLeft, akRight, akBottom]

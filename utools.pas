@@ -15,7 +15,7 @@ type
     bmpName: String;
     Figure: TFigure;
     thickness: Integer;
-    penColor: TColor;
+    penColor: TColor;                                           /////////
     brushColor: TColor;
     penStyle: TFPPenStyle;
     brushStyle: TFPBrushStyle;
@@ -116,6 +116,13 @@ type
     procedure MouseUp(X, Y, AWidth, AHeight: Integer); override;
   end;
 
+  TSelectorTool = class(TTool)
+    constructor Create;
+    procedure Init(APanel: TPanel); override;
+    procedure MouseDown(X, Y: Integer); override;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer); override;
+  end;
+
 var
   ToolRegistry: array of TTool;
 
@@ -197,7 +204,7 @@ begin
   roundingRadiusX := RoundingXEdit.Value;
 end;
 
-procedure TTool.AddRoundingXEdit(APanel: TPanel);
+procedure TTool.AddRoundingXEdit(APanel: TPanel);               //////////////
 begin
   RoundingXEdit := TSpinEdit.Create(APanel);
   With RoundingXEdit do begin
@@ -220,7 +227,7 @@ begin
   roundingRadiusY := RoundingYEdit.Value;
 end;
 
-procedure TTool.AddRoundingYEdit(APanel: TPanel);
+procedure TTool.AddRoundingYEdit(APanel: TPanel);             //////////
 begin
   RoundingYEdit := TSpinEdit.Create(APanel);
   With RoundingYEdit do begin
@@ -322,10 +329,10 @@ begin
   Figure := TPolyline.Create;
   SetParams;
   with Figure.bounds do begin
-    Top := Y;
-    Left := X;
-    Bottom := Y;
-    Right := X;
+    Top := ScrToWorld(X, Y).Y;
+    Left := ScrToWorld(X, Y).X;
+    Bottom := ScrToWorld(X, Y).Y;
+    Right := ScrToWorld(X, Y).X;
   end;
   Figure.AddPoint(X, Y, true);
 end;
@@ -365,6 +372,44 @@ begin
   AddWidthEdit(APanel);
   ToDefaultParams;
 end;
+
+{work here}
+
+procedure UnselectAll;
+var i: integer;
+begin
+  for i := 0 to High(Figures) do
+    Figures[i].Selected := false;
+end;
+
+procedure TSelectorTool.MouseDown(X, Y: Integer);
+begin
+  UnselectAll;
+  Figure := TFrame.Create;
+  Figure.AddPoint(X, Y, true);
+end;
+
+constructor TSelectorTool.Create;
+begin
+  Inherited;
+  bmpName := 'icons/Selector.bmp';
+end;
+
+procedure TSelectorTool.MouseUp(X, Y, AWidth, AHeight: Integer);
+var i: Integer;
+begin
+  for i := 0 to High(Figures) do
+    if Figures[i].IsIntersect(Figure.bounds) then
+      Figures[i].Selected := true;
+  Figure := nil;
+end;
+
+procedure TSelectorTool.Init(APanel: TPanel);
+begin
+  ParametersAvailable := false;
+end;
+
+{/work here}
 
 procedure TEllipseTool.MouseDown(X, Y: Integer);
 begin
@@ -563,6 +608,7 @@ end;
 initialization
 
 RegisterTool(TDragTool.Create);
+RegisterTool(TSelectorTool.Create);
 RegisterTool(TPolyLineTool.Create);
 RegisterTool(TRectangleTool.Create);
 RegisterTool(TRoundRectTool.Create);
