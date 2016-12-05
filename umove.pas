@@ -31,10 +31,10 @@ type
   function DoubleRect(ATopLeft, ABottomRight: TDoublePoint): TDoubleRect;
   procedure SetCanvasPosition(AX, AY: Double);
   procedure CanvasMove(dX, dY: Double);
-  function WorldToScrCrds(ADoublePoint: TDoublePoint): TPoint;
-  function WorldToScrCrds(AX, AY: Double): TPoint;
-  function WorldToScrCrds(ADoubleRect: TDoubleRect): TRect;
-  function WorldToScrCrds(AVertices: array of TDoublePoint): TArrayOfTpoint;
+  function WorldToScr(ADoublePoint: TDoublePoint): TPoint;
+  function WorldToScr(AX, AY: Double): TPoint;
+  function WorldToScr(ADoubleRect: TDoubleRect): TRect;
+  function WorldToScr(AVertices: array of TDoublePoint): TArrayOfTpoint;
   function ScrToWorld(AX, AY: Integer): TDoublePoint;
   procedure SetScale(AScale: Double;  APosX, APosY: Integer);
   procedure AdjustCanvasBounds(ARect: TDoubleRect);
@@ -129,7 +129,7 @@ begin
   CanvasPosition.Y += Scale * dY;
 end;
 
-function WorldToScrCrds(ADoublePoint: TDoublePoint): TPoint;
+function WorldToScr(ADoublePoint: TDoublePoint): TPoint;
 begin
   with Result do begin
     x := round(Scale * ADoublePoint.X - CanvasPosition.X);
@@ -137,7 +137,7 @@ begin
   end;
 end;
 
-function WorldToScrCrds(AX, AY: Double): TPoint;
+function WorldToScr(AX, AY: Double): TPoint;
 begin
   with Result do begin
     x := round(Scale * AX - CanvasPosition.X);
@@ -145,21 +145,21 @@ begin
   end;
 end;
 
-function WorldToScrCrds(ADoubleRect: TDoubleRect): TRect;
+function WorldToScr(ADoubleRect: TDoubleRect): TRect;
 begin
   with Result do begin
-    TopLeft := WorldToScrCrds(ADoubleRect.TopLeft);
-    BottomRight := WorldToScrCrds(ADoubleRect.BottomRight);
+    TopLeft := WorldToScr(ADoubleRect.TopLeft);
+    BottomRight := WorldToScr(ADoubleRect.BottomRight);
   end;
 end;
 
-function WorldToScrCrds(AVertices: array of TDoublePoint): TArrayOfTpoint;
+function WorldToScr(AVertices: array of TDoublePoint): TArrayOfTpoint;
 var
   i: Integer;
 begin
   SetLength(Result, Length(AVertices));
   for i := 0 to High(Result) do begin
-    Result[i] := WorldToScrCrds(AVertices[i]);
+    Result[i] := WorldToScr(AVertices[i]);
   end;
 end;
 

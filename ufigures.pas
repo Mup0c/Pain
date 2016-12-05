@@ -117,32 +117,32 @@ end;
 
 procedure TPolyline.DrawFigure(Canvas: TCanvas);
 begin
-  Canvas.Polyline(WorldToScrCrds(Vertices));
+  Canvas.Polyline(WorldToScr(Vertices));
 end;
 
 procedure TRectangle.DrawFigure(Canvas: TCanvas);
 begin
-  Canvas.Rectangle(WorldToScrCrds(bounds));
+  Canvas.Rectangle(WorldToScr(bounds));
 end;
 
 procedure TEllipse.DrawFigure(Canvas: TCanvas);
 begin
-  Canvas.Ellipse(WorldToScrCrds(bounds));
+  Canvas.Ellipse(WorldToScr(bounds));
 end;
 
 procedure TLine.DrawFigure(Canvas: TCanvas);
 begin
-  Canvas.Line(WorldToScrCrds(bounds));
+  Canvas.Line(WorldToScr(bounds));
 end;
 
 procedure TFrame.DrawFigure(Canvas: TCanvas);
 begin
-  Canvas.Frame(WorldToScrCrds(bounds));
+  Canvas.Frame(WorldToScr(bounds));
 end;
 
 procedure TRoundRect.DrawFigure(Canvas: TCanvas);
 begin
-  Canvas.RoundRect(WorldToScrCrds(bounds),roundingRadiusX,roundingRadiusY);
+  Canvas.RoundRect(WorldToScr(bounds),roundingRadiusX,roundingRadiusY);
 end;
 
 procedure TPolygon.DrawFigure(Canvas: TCanvas);
@@ -159,7 +159,7 @@ begin
     Vertices[i].x := Center.X + (Radius*sin(i * 2 * pi / numOfVertices));
     Vertices[i].y := Center.Y + (Radius*cos(i * 2 * pi / numOfVertices));
   end;
-  Canvas.Polygon(WorldToScrCrds(Vertices));
+  Canvas.Polygon(WorldToScr(Vertices));
 end;
 
 function TPolygon.Getbounds: TDoubleRect;

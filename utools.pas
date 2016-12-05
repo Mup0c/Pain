@@ -399,12 +399,16 @@ var i: Integer;
 begin
   if not (ssCtrl in Shift) then
     UnselectAll;
-  for i := 0 to High(Figures) do
+  for i := High(Figures) downto 0 do
     if Figures[i].IsIntersect(Figure.bounds) then begin
       if ssCtrl in Shift then
         Figures[i].Selected := not Figures[i].Selected
       else
         Figures[i].Selected := true;
+      if (abs(Figure.bounds.Left - Figure.bounds.Right) < 5) and
+         (abs(Figure.bounds.Top - Figure.bounds.Bottom) < 5)
+      then
+        break;
     end;
   Figure := nil;
 end;
