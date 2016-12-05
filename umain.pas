@@ -334,7 +334,7 @@ var
 begin
   if Button = mbLeft then begin
     isMouseDown := false;
-    CurrentTool.MouseUp(X, Y, PaintField.Width, PaintField.Height);
+    CurrentTool.MouseUp(X, Y, PaintField.Width, PaintField.Height, Shift);
     if CurrentTool.Figure <> nil then begin
       SaveFigure(CurrentTool.GetFigure);
       b := CurrentTool.GetFigure.GetBounds;

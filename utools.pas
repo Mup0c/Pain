@@ -47,7 +47,7 @@ type
     procedure Init(APanel: TPanel); virtual; abstract;
     procedure MouseDown(X, Y: Integer); virtual; abstract;
     procedure MouseMove(X, Y: Integer); virtual;
-    procedure MouseUp(X, Y, AWidth, AHeight: Integer); virtual;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); virtual;
   end;
 
   TPolylineTool = class(TTool)
@@ -113,14 +113,14 @@ type
     procedure Init(APanel: TPanel); override;
     procedure MouseMove(X, Y: Integer); override;
     procedure MouseDown(X, Y: Integer); override;
-    procedure MouseUp(X, Y, AWidth, AHeight: Integer); override;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); override;
   end;
 
   TSelectorTool = class(TTool)
     constructor Create;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
-    procedure MouseUp(X, Y, AWidth, AHeight: Integer); override;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); override;
   end;
 
 var
@@ -128,7 +128,7 @@ var
 
 implementation
 
-procedure TTool.MouseUp(X, Y, AWidth, AHeight: Integer);
+procedure TTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
 begin
 end;
 
@@ -384,7 +384,6 @@ end;
 
 procedure TSelectorTool.MouseDown(X, Y: Integer);
 begin
-  UnselectAll;
   Figure := TFrame.Create;
   Figure.AddPoint(X, Y, true);
 end;
@@ -395,12 +394,18 @@ begin
   bmpName := 'icons/Selector.bmp';
 end;
 
-procedure TSelectorTool.MouseUp(X, Y, AWidth, AHeight: Integer);
+procedure TSelectorTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
 var i: Integer;
 begin
+  if not (ssCtrl in Shift) then
+    UnselectAll;
   for i := 0 to High(Figures) do
-    if Figures[i].IsIntersect(Figure.bounds) then
-      Figures[i].Selected := true;
+    if Figures[i].IsIntersect(Figure.bounds) then begin
+      if ssCtrl in Shift then
+        Figures[i].Selected := not Figures[i].Selected
+      else
+        Figures[i].Selected := true;
+    end;
   Figure := nil;
 end;
 
@@ -574,7 +579,7 @@ begin
   Figure.AddPoint(X, Y, false);
 end;
 
-procedure TZoomToTool.MouseUp(X, Y, AWidth, AHeight: Integer);
+procedure TZoomToTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
 var Bottom, Top, Right, Left: Double;
 begin
   Top := Figure.bounds.Top;
