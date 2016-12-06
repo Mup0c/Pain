@@ -69,9 +69,14 @@ var
 implementation
 
 function TFigure.IsIntersect(ARect: TDoubleRect): boolean;
+var
+  Top, Bottom, Left, Right: TDoublePoint;
 begin
-  result := not ((min(bounds.Top,bounds.Bottom) > max(ARect.Top,ARect.Bottom)) or (max(bounds.Top,bounds.Bottom) < min(ARect.Top,ARect.Bottom))
-              or (max(bounds.Left,bounds.Right) < min(ARect.Left,ARect.Right)) or (min(bounds.Left,bounds.Right) > max(ARect.Left,ARect.Right)));
+  Top := min(bounds.Top,bounds.Bottom);
+  Bottom := max(ARect.Top,ARect.Bottom);
+  Left := min(ARect.Left,ARect.Right);
+  Right := max(ARect.Left,ARect.Right);
+  result := not ((Top > Bottom) or (Bottom < Top) or (Right < Left) or (Left > Right));
 end;
 
 procedure TFigure.Draw(Canvas: TCanvas);

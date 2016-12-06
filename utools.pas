@@ -32,8 +32,7 @@ type
     procedure SetParams;
     procedure ToDefaultParams;
     procedure AddWidthEdit(APanel: TPanel); virtual;
-    procedure AddRoundingXEdit(APanel: TPanel); virtual;
-    procedure AddRoundingYEdit(APanel: TPanel); virtual;
+    procedure AddRoundingEdit(APanel: TPanel; XY: char); virtual;
     procedure AddBrushStyleEdit(APanel: TPanel);
     procedure AddPenStyleEdit(APanel: TPanel);
     procedure AddNumOfVerticesEdit(APanel: TPanel);
@@ -204,10 +203,13 @@ begin
   roundingRadiusX := RoundingXEdit.Value;
 end;
 
-procedure TTool.AddRoundingXEdit(APanel: TPanel);               //////////////
+procedure TTool.AddRoundingEdit(APanel: TPanel; XY: char);
+var
+  name: String;
+  RoundingEdit: TSpinEdit;
 begin
-  RoundingXEdit := TSpinEdit.Create(APanel);
-  With RoundingXEdit do begin
+  RoundingEdit := TSpinEdit.Create(APanel);
+  With RoundingEdit do begin
     Parent := APanel;
     Left := 2;
     Top := 2;
@@ -216,32 +218,22 @@ begin
     MaxValue := 1000;
     Value := 10;
     BorderSpacing.Around:= 5;
-    OnChange := @RoundingXEditChange;
+    if xy = 'X' then begin
+      OnChange := @RoundingXEditChange;
+      RoundingXEdit := RoundingEdit;
+    end
+    else begin
+      OnChange := @RoundingYEditChange;
+      RoundingYEdit := RoundingEdit;
+    end;
   end;
-  AddLabel('Rounding X:', APanel);
+  name := 'Rounding ' + XY + ':';
+  AddLabel(name, APanel);
 end;
-
 
 procedure TTool.RoundingYEditChange(Sender: TObject);
 begin
   roundingRadiusY := RoundingYEdit.Value;
-end;
-
-procedure TTool.AddRoundingYEdit(APanel: TPanel);             //////////
-begin
-  RoundingYEdit := TSpinEdit.Create(APanel);
-  With RoundingYEdit do begin
-    Parent := APanel;
-    Left := 2;
-    Top := 2;
-    Align := altop;
-    MinValue := 0;
-    MaxValue := 1000;
-    Value := 10;
-    BorderSpacing.Around:= 5;
-    OnChange := @RoundingYEditChange;
-  end;
-  AddLabel('Rounding Y:', APanel);
 end;
 
 procedure TTool.PenStyleEditChange(Sender: TObject);
@@ -458,8 +450,8 @@ end;
 procedure TRoundRectTool.Init(APanel: TPanel);
 begin
   ParametersAvailable := true;
-  AddRoundingYEdit(APanel);
-  AddRoundingXEdit(APanel);
+  AddRoundingEdit(APanel, 'Y');
+  AddRoundingEdit(APanel, 'X');
   AddBrushStyleEdit(APanel);
   AddPenStyleEdit(APanel);
   AddWidthEdit(APanel);
