@@ -359,14 +359,14 @@ begin
           Brush.Style := bsDiagCross;
           Pen.Style := psDash;
         end;
-        Figures[i].DrawFigure(PaintField.Canvas);
+        Figures[i].DrawFigure(PaintField.Canvas, false);
         With PaintField.Canvas do begin
           Brush.Color := clBlue;
           Pen.Color := clBlue;
           Pen.Style := psDot;
           Brush.Style := bsCross;
         end;
-        Figures[i].DrawFigure(PaintField.Canvas);
+        Figures[i].DrawFigure(PaintField.Canvas, false);
       end;
     end;
   EditValueChangedByCode := true;
@@ -378,7 +378,7 @@ begin
   AdjustCanvasBounds(DoubleRect(ScrToWorld(0,0),ScrToWorld(PaintField.Width,PaintField.Height)));
   ScrollsChangingByCode:= true;
     SetScroolBarsParameters(canvasBounds);
-  ScrollsChangingByCode:= false;;
+  ScrollsChangingByCode:= false;
 end;
 
 procedure TMainScreen.SetScroolBarsParameters(ARect: TDoubleRect);

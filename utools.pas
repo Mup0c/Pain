@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
   ExtCtrls, ComCtrls, StdCtrls, Buttons, math, Grids, Spin,
-  UFigures, UMove, LCLType, Types, FPCanvas;
+  UFigures, UMove, LCLType, Types, FPCanvas, UAbout; /////////////////
 
 type
 
@@ -15,7 +15,7 @@ type
     bmpName: String;
     Figure: TFigure;
     thickness: Integer;
-    penColor: TColor;                                           /////////
+    penColor: TColor;                                           ///////// раскидать в насделников
     brushColor: TColor;
     penStyle: TFPPenStyle;
     brushStyle: TFPBrushStyle;
@@ -29,8 +29,8 @@ type
     NumOfVerticesEdit: TSpinEdit;
     roundingRadiusX, roundingRadiusY: integer;
     function GetFigure: TFigure; virtual;
-    procedure SetParams;
-    procedure ToDefaultParams;
+    procedure SetParams; virtual;
+    procedure ToDefaultParams; virtual;
     procedure AddWidthEdit(APanel: TPanel); virtual;
     procedure AddRoundingEdit(APanel: TPanel; XY: char); virtual;
     procedure AddBrushStyleEdit(APanel: TPanel);
@@ -57,12 +57,16 @@ type
 
   TRectangleTool = class(TTool)
     constructor Create;
+    procedure SetParams; override;
+    procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
   end;
 
   TEllipseTool = class(TTool)
     constructor Create;
+    procedure SetParams; override;
+    procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
   end;
@@ -75,12 +79,16 @@ type
 
   TRoundRectTool = class(TTool)
     constructor Create;
+    procedure SetParams; override;
+    procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
   end;
 
   TPolygonTool = class(TTool)
     constructor Create;
+    procedure SetParams; override;
+    procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
   end;
@@ -140,22 +148,71 @@ procedure TTool.SetParams;
 begin
   Figure.thickness := thickness;
   Figure.penColor := penColor;
-  Figure.brushColor := brushColor;
   Figure.penStyle := penStyle;
-  Figure.brushStyle := brushStyle;
-  Figure.numOfVertices := numOfVertices;
-  Figure.roundingRadiusX := roundingRadiusX;
-  Figure.roundingRadiusY := roundingRadiusY;
+end;
+
+procedure TRectangleTool.SetParams;
+begin
+  Inherited;
+    (Figure as TRectangle).brushColor := brushColor;
+    (Figure as TRectangle).brushStyle := brushStyle;
+end;
+
+procedure TEllipseTool.SetParams;
+begin
+  Inherited;
+    (Figure as TEllipse).brushColor := brushColor;
+    (Figure as TEllipse).brushStyle := brushStyle;
+end;
+
+procedure TRoundRectTool.SetParams;
+begin
+  Inherited;
+    (Figure as TRoundRect).brushColor := brushColor;
+    (Figure as TRoundRect).brushStyle := brushStyle;
+    (Figure as TRoundRect).roundingRadiusX := roundingRadiusX;
+    (Figure as TRoundRect).roundingRadiusY := roundingRadiusY;
+end;
+
+procedure TPolygonTool.SetParams;
+begin
+  Inherited;
+    (Figure as TPolygon).brushColor := brushColor;
+    (Figure as TPolygon).brushStyle := brushStyle;
+    (Figure as TPolygon).numOfVertices := numOfVertices;
 end;
 
 procedure TTool.ToDefaultParams;
 begin
   thickness := 1;
   penStyle := psSolid;
+end;
+
+procedure TRectangleTool.ToDefaultParams;
+begin
+  Inherited;
   brushStyle := bsSolid;
-  numOfVertices := 3;
+end;
+
+procedure TEllipseTool.ToDefaultParams;
+begin
+  Inherited;
+  brushStyle := bsSolid;
+end;
+
+procedure TRoundRectTool.ToDefaultParams;
+begin
+  Inherited;
+  brushStyle := bsSolid;
   roundingRadiusX := 10;
   roundingRadiusY := 10;
+end;
+
+procedure TPolygonTool.ToDefaultParams;
+begin
+  Inherited;
+  brushStyle := bsSolid;
+  numOfVertices := 3;
 end;
 
 procedure TTool.MouseMove(X, Y: Integer);
@@ -365,8 +422,6 @@ begin
   ToDefaultParams;
 end;
 
-{work here}
-
 procedure UnselectAll;
 var i: integer;
 begin
@@ -388,20 +443,44 @@ end;
 
 procedure TSelectorTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
 var i: Integer;
+  boundsWithWidth:TDoubleRect;
+  th: Double;
 begin
+  with Figure.bounds do begin
+    if (Left = Right) or (Top = Bottom) then begin
+      Top -= 1/scale;
+      Left -= 1/scale;
+      Bottom += 1/scale;
+      Right += 1/scale;
+    end;
+  end;
   if not (ssCtrl in Shift) then
     UnselectAll;
-  for i := High(Figures) downto 0 do
-    if Figures[i].IsIntersect(Figure.bounds) then begin
+  for i := High(Figures) downto 0 do begin
+    th := Figures[i].thickness/scale;
+    with figure.bounds do begin
+      if Left < Right then
+        boundsWithWidth := DoubleRect(Left - (th/2), Top, Right + (th/2), Bottom)
+      else
+        boundsWithWidth := DoubleRect(Left + (th/2), Top, Right - (th/2), Bottom);
+      if Top < Bottom then
+        boundsWithWidth := DoubleRect(boundsWithWidth.Left, Top - (th/2),
+                                      boundsWithWidth.Right, Bottom + (th/2))
+      else
+        boundsWithWidth := DoubleRect(boundsWithWidth.Left, Top + (th/2),
+                                      boundsWithWidth.Right, Bottom - (th/2));
+    end;
+    if Figures[i].IsIntersect(boundsWithWidth) then begin
       if ssCtrl in Shift then
         Figures[i].Selected := not Figures[i].Selected
       else
         Figures[i].Selected := true;
-      if (abs(Figure.bounds.Left - Figure.bounds.Right) < 5) and
-         (abs(Figure.bounds.Top - Figure.bounds.Bottom) < 5)
+      if (abs(Figure.bounds.Left - Figure.bounds.Right) < 4/scale) and
+         (abs(Figure.bounds.Top - Figure.bounds.Bottom) < 4/scale)
       then
         break;
     end;
+  end;
   Figure := nil;
 end;
 
@@ -409,8 +488,6 @@ procedure TSelectorTool.Init(APanel: TPanel);
 begin
   ParametersAvailable := false;
 end;
-
-{/work here}
 
 procedure TEllipseTool.MouseDown(X, Y: Integer);
 begin

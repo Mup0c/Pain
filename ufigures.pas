@@ -5,26 +5,21 @@ unit UFigures;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
-  ExtCtrls, ComCtrls, StdCtrls, Buttons, math, Grids, Spin, UMove, LCLType, Types, FPCanvas;
+  UMove, windows, Classes, SysUtils, Graphics, FPCanvas, LCL, math;
 
 type
 
   TFigure = class
     thickness: integer;
-    penColor: TColor;                                          ////////
-    brushColor: TColor;
+    penColor: TColor;
     penStyle: TFPPenStyle;
-    brushStyle: TFPBrushStyle;
-    numOfVertices: integer;
-    roundingRadiusX,  roundingRadiusY: integer;
     bounds: TDoubleRect;
     Selected: boolean;
     function GetBounds: TDoubleRect; virtual;
     procedure Draw(Canvas: TCanvas); virtual;
-    procedure DrawFigure(Canvas: TCanvas); virtual; abstract;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); virtual; abstract;
     procedure AddPoint(X, Y: Integer; first: Boolean); virtual; abstract;
-    function IsIntersect(ARect: TDoubleRect): boolean;
+    function IsIntersect(ARect: TDoubleRect): boolean; virtual; abstract;
   end;
 
   TTwoPointFigure = class(TFigure)
@@ -33,34 +28,50 @@ type
 
   TPolyline = class(TFigure)
     vertices: array of TDoublePoint;
-    procedure DrawFigure(Canvas: TCanvas); override;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     procedure AddPoint(X, Y: Integer; first: Boolean); override;
+    function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
   TRectangle = class(TTwoPointFigure)
-    procedure DrawFigure(Canvas: TCanvas); override;
+    brushColor: TColor;
+    brushStyle: TFPBrushStyle;
+    procedure DrawFigure(Canvas:TCanvas; UsingBrush: boolean); override;
+    function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
   TEllipse = class(TTwoPointFigure)
-    procedure DrawFigure(Canvas: TCanvas); override;
+    brushColor: TColor;
+    brushStyle: TFPBrushStyle;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
+    function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
   TLine = class(TTwoPointFigure)
-    procedure DrawFigure(Canvas: TCanvas); override;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
+    function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
   TFrame = class(TTwoPointFigure)
-    procedure DrawFigure(Canvas: TCanvas); override;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
   end;
 
   TRoundRect = class(TTwoPointFigure)
-    procedure DrawFigure(Canvas: TCanvas); override;
+    brushColor: TColor;
+    brushStyle: TFPBrushStyle;
+    roundingRadiusX,  roundingRadiusY: integer;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
+    function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
   TPolygon = class(TTwoPointFigure)
     Vertices: array of TDoublePoint;
+    brushColor: TColor;
+    brushStyle: TFPBrushStyle;
+    numOfVertices: integer;
     function GetBounds: TDoubleRect; override;
-    procedure DrawFigure(Canvas: TCanvas); override;
+    procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
+    function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
 var
@@ -68,25 +79,103 @@ var
 
 implementation
 
-function TFigure.IsIntersect(ARect: TDoubleRect): boolean;
-var
-  Top, Bottom, Left, Right: TDoublePoint;
-begin
-  Top := min(bounds.Top,bounds.Bottom);
-  Bottom := max(ARect.Top,ARect.Bottom);
-  Left := min(ARect.Left,ARect.Right);
-  Right := max(ARect.Left,ARect.Right);
-  result := not ((Top > Bottom) or (Bottom < Top) or (Right < Left) or (Left > Right));
-end;
 
 procedure TFigure.Draw(Canvas: TCanvas);
 begin
   Canvas.Pen.Color := penColor;
-  Canvas.Brush.Color := brushColor;
   Canvas.Pen.Width := thickness;
   Canvas.Pen.Style := penStyle;
-  Canvas.Brush.Style := brushStyle;
-  DrawFigure(Canvas);
+  DrawFigure(Canvas, true);
+end;
+
+function AreSegmentsIntersect(A1,A2,B1,B2: TDoublePoint): Boolean;
+var
+  v1,v2,v3,v4, ax1, ay1, ax2, ay2, bx1, by1, bx2, by2: Double;
+ begin
+  ax1 := A1.X;
+  ay1 := A1.Y;
+  ax2 := A2.X;
+  ay2 := A2.Y;
+  bx1 := B1.X;
+  by1 := B1.Y;
+  bx2 := B2.X;
+  by2 := B2.Y;
+  v1:=(bx2-bx1)*(ay1-by1)-(by2-by1)*(ax1-bx1);
+  v2:=(bx2-bx1)*(ay2-by1)-(by2-by1)*(ax2-bx1);
+  v3:=(ax2-ax1)*(by1-ay1)-(ay2-ay1)*(bx1-ax1);
+  v4:=(ax2-ax1)*(by2-ay1)-(ay2-ay1)*(bx2-ax1);
+  Result := (v1*v2<0) and (v3*v4<0);
+end;
+
+function IsRectIntersectSegment(AFpoint, ASpoint: TDoublePoint; ARect: TDoubleRect): Boolean;
+begin
+ Result := false;
+  with ARect do begin
+    if AreSegmentsIntersect(AFpoint,ASpoint, DoublePoint(Left, Bottom), TopLeft) or
+       AreSegmentsIntersect(AFpoint,ASpoint, TopLeft, DoublePoint(Right, Top)) or
+       AreSegmentsIntersect(AFpoint,ASpoint, DoublePoint(Right, Top), BottomRight) or
+       AreSegmentsIntersect(AFpoint,ASpoint, BottomRight, DoublePoint(Left, Bottom)) or
+       ((AFpoint.Y <= max(Top,Bottom)) and (AFpoint.Y >= min(Top,Bottom)) and
+       (AFpoint.X <= max(Left,Right)) and (AFpoint.X >= min(Left,Right)))
+    then result := true;
+  end;
+end;
+
+function TPolyline.IsIntersect(ARect: TDoubleRect): boolean;
+var
+  i: integer;
+begin
+ Result := false;
+ for i := 0 to High(vertices)-1 do
+  if IsRectIntersectSegment(vertices[i],vertices[i+1],ARect) then Result := true;
+end;
+
+function TRectangle.IsIntersect(ARect: TDoubleRect): boolean;
+begin
+  result := not ((min(bounds.Top,bounds.Bottom) > max(ARect.Top,ARect.Bottom))
+              or (max(bounds.Top,bounds.Bottom) < min(ARect.Top,ARect.Bottom))
+              or (max(bounds.Left,bounds.Right) < min(ARect.Left,ARect.Right))
+              or (min(bounds.Left,bounds.Right) > max(ARect.Left,ARect.Right)));
+end;
+
+function TEllipse.IsIntersect(ARect: TDoubleRect): boolean;
+var
+  Ellipse: HRGN;
+begin
+  with WorldToScr(bounds) do begin
+    Ellipse := CreateEllipticRgn(Left, Top, Right, Bottom);
+  end;
+  Result := RectInRegion(Ellipse, WorldToScr(ARect));
+  DeleteObject(Ellipse);
+end;
+
+function TLine.IsIntersect(ARect: TDoubleRect): boolean;
+begin
+  Result := false;
+  if IsRectIntersectSegment(bounds.TopLeft,bounds.BottomRight, ARect) then Result := true;
+end;
+
+function TRoundRect.IsIntersect(ARect: TDoubleRect): boolean;
+var
+  RoundRect: HRGN;
+begin
+  with WorldToScr(bounds) do begin
+    RoundRect := CreateRoundRectRgn(Left, Top, Right, Bottom, roundingRadiusX, roundingRadiusY);
+  end;
+  Result := RectInRegion(RoundRect, WorldToScr(ARect));
+  DeleteObject(RoundRect);
+end;
+
+function TPolygon.IsIntersect(ARect: TDoubleRect): boolean;
+var
+  Polygon: HRGN;
+  Points: array of TPoint;
+begin
+  SetLength(Points, numOfVertices);
+  Points := WorldToScr(Vertices);
+  Polygon := CreatePolygonRgn(Points[0], Length(Points), WINDING);
+  Result := RectInRegion(Polygon, WorldToScr(ARect));
+  DeleteObject(Polygon);
 end;
 
 function TFigure.Getbounds: TDoubleRect;
@@ -120,37 +209,49 @@ begin
     bounds.BottomRight := ScrToWorld(X, Y)
 end;
 
-procedure TPolyline.DrawFigure(Canvas: TCanvas);
+procedure TPolyline.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 begin
   Canvas.Polyline(WorldToScr(Vertices));
 end;
 
-procedure TRectangle.DrawFigure(Canvas: TCanvas);
+procedure TRectangle.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 begin
+  if UsingBrush then begin
+    Canvas.Brush.Color := brushColor;
+    Canvas.Brush.Style := brushStyle;
+  end;
   Canvas.Rectangle(WorldToScr(bounds));
 end;
 
-procedure TEllipse.DrawFigure(Canvas: TCanvas);
+procedure TEllipse.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 begin
+  if UsingBrush then begin
+    Canvas.Brush.Color := brushColor;
+    Canvas.Brush.Style := brushStyle;
+  end;
   Canvas.Ellipse(WorldToScr(bounds));
 end;
 
-procedure TLine.DrawFigure(Canvas: TCanvas);
+procedure TLine.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 begin
   Canvas.Line(WorldToScr(bounds));
 end;
 
-procedure TFrame.DrawFigure(Canvas: TCanvas);
+procedure TFrame.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 begin
   Canvas.Frame(WorldToScr(bounds));
 end;
 
-procedure TRoundRect.DrawFigure(Canvas: TCanvas);
+procedure TRoundRect.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 begin
+  if UsingBrush then begin
+    Canvas.Brush.Color := brushColor;
+    Canvas.Brush.Style := brushStyle;
+  end;
   Canvas.RoundRect(WorldToScr(bounds),roundingRadiusX,roundingRadiusY);
 end;
 
-procedure TPolygon.DrawFigure(Canvas: TCanvas);
+procedure TPolygon.DrawFigure(Canvas: TCanvas; UsingBrush: boolean);
 var
   i: Integer;
   Center: TDoublePoint;
@@ -163,6 +264,10 @@ begin
   for i := 0 to numOfVertices - 1 do begin
     Vertices[i].x := Center.X + (Radius*sin(i * 2 * pi / numOfVertices));
     Vertices[i].y := Center.Y + (Radius*cos(i * 2 * pi / numOfVertices));
+  end;
+  if UsingBrush then begin
+    Canvas.Brush.Color := brushColor;
+    Canvas.Brush.Style := brushStyle;
   end;
   Canvas.Polygon(WorldToScr(Vertices));
 end;

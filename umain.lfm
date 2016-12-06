@@ -1,7 +1,7 @@
 object MainScreen: TMainScreen
-  Left = 172
+  Left = 996
   Height = 608
-  Top = 48
+  Top = 584
   Width = 1035
   Caption = 'Paint alpha dark_moon_edition'
   ClientHeight = 588
@@ -164,7 +164,7 @@ object MainScreen: TMainScreen
       OnChange = ScaleEditChange
       ParentFont = False
       TabOrder = 2
-      Value = 2500
+      Value = 100
     end
   end
   object DrawGrid: TDrawGrid
