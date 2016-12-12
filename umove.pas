@@ -40,8 +40,6 @@ type
   procedure AdjustCanvasBounds(ARect: TDoubleRect);
   procedure AdjustImageBounds(AX, AY: Double);
 
-
-
 var
   Scale: Double = 1.0;
   CanvasPosition,prevCrds: TDoublePoint;

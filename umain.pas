@@ -330,6 +330,7 @@ end;
 procedure TMainScreen.PaintFieldMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
+  i: integer;
   b: TDoubleRect;
 begin
   if Button = mbLeft then begin
@@ -337,7 +338,11 @@ begin
     CurrentTool.MouseUp(X, Y, PaintField.Width, PaintField.Height, Shift);
     if CurrentTool.Figure <> nil then begin
       SaveFigure(CurrentTool.GetFigure);
-      b := CurrentTool.GetFigure.GetBounds;
+    end;
+    for i := 0 to High(Figures) do begin
+      b := Figures[i].bounds;
+      if i = 0 then
+        imageBounds := b;
       AdjustImageBounds(b.Left, b.Top);
       AdjustImageBounds(b.Right, b.Bottom);
     end;

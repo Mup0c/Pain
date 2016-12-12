@@ -6,12 +6,19 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
-  ExtCtrls, ComCtrls, StdCtrls, Buttons, math, Grids, Spin,
-  UFigures, UMove, LCLType, Types, FPCanvas, UAbout; /////////////////
+  ExtCtrls, StdCtrls, Buttons, math, Spin,
+  UFigures, UMove, LCLType, FPCanvas;
 
 type
 
+  TParameter = class
+  end;
+
   TTool = class
+    WidthEdit: TSpinEdit;
+    RoundingXEdit: TSpinEdit;
+    RoundingYEdit: TSpinEdit;
+    parameters: array of TParameter;
     bmpName: String;
     Figure: TFigure;
     thickness: Integer;
@@ -21,9 +28,6 @@ type
     brushStyle: TFPBrushStyle;
     numOfVertices: integer;
     ParametersAvailable: boolean;
-    WidthEdit: TSpinEdit;
-    RoundingXEdit: TSpinEdit;
-    RoundingYEdit: TSpinEdit;
     PenStyleEdit: TComboBox;
     BrushStyleEdit: TComboBox;
     NumOfVerticesEdit: TSpinEdit;
@@ -142,6 +146,13 @@ end;
 function TTool.GetFigure: TFigure;
 begin
   Result := Figure;
+end;
+
+procedure UnselectAll;
+var i: integer;
+begin
+  for i := 0 to High(Figures) do
+    Figures[i].Selected := false;
 end;
 
 procedure TTool.SetParams;
@@ -394,6 +405,7 @@ end;
 
 procedure TPolylineTool.Init(APanel: TPanel);
 begin
+  UnselectAll;
   ParametersAvailable := true;
   AddPenStyleEdit(APanel);
   AddWidthEdit(APanel);
@@ -415,18 +427,12 @@ end;
 
 procedure TRectangleTool.Init(APanel: TPanel);
 begin
+  UnselectAll;
   ParametersAvailable := true;
   AddBrushStyleEdit(APanel);
   AddPenStyleEdit(APanel);
   AddWidthEdit(APanel);
   ToDefaultParams;
-end;
-
-procedure UnselectAll;
-var i: integer;
-begin
-  for i := 0 to High(Figures) do
-    Figures[i].Selected := false;
 end;
 
 procedure TSelectorTool.MouseDown(X, Y: Integer);
@@ -504,6 +510,7 @@ end;
 
 procedure TEllipseTool.Init(APanel: TPanel);
 begin
+  UnselectAll;
   ParametersAvailable := true;
   AddBrushStyleEdit(APanel);
   AddPenStyleEdit(APanel);
@@ -526,6 +533,7 @@ end;
 
 procedure TRoundRectTool.Init(APanel: TPanel);
 begin
+  UnselectAll;
   ParametersAvailable := true;
   AddRoundingEdit(APanel, 'Y');
   AddRoundingEdit(APanel, 'X');
@@ -550,6 +558,7 @@ end;
 
 procedure TLineTool.Init(APanel: TPanel);
 begin
+  UnselectAll;
   ParametersAvailable := true;
   AddPenStyleEdit(APanel);
   AddWidthEdit(APanel);
@@ -571,6 +580,7 @@ end;
 
 procedure TPolygonTool.Init(APanel: TPanel);
 begin
+  UnselectAll;
   ParametersAvailable := true;
   AddBrushStyleEdit(APanel);
   AddPenStyleEdit(APanel);
@@ -585,8 +595,32 @@ begin
 end;
 
 procedure TDragTool.MouseMove(X, Y: Integer);
+var i,j: Integer;
+  dX,dY:Double;
+  anySelected: boolean;
 begin
-  CanvasMove(prevCrds.X - ScrToWorld(X,Y).X, prevCrds.Y - ScrToWorld(X,Y).Y);
+  anySelected := False;
+  dX := prevCrds.X - ScrToWorld(X,Y).X;
+  dY := prevCrds.Y - ScrToWorld(X,Y).Y;
+  for i := 0 to High(Figures) do begin
+    if Figures[i].Selected then begin
+      if Figures[i] is TPolyline then begin
+        for j:=0 to high((Figures[i] as TPolyline).vertices) do begin
+          (Figures[i] as TPolyline).vertices[j].Y -= dY;
+          (Figures[i] as TPolyline).vertices[j].X -= dX;
+        end;
+      end;
+      Figures[i].bounds.Top -=  dY;
+      Figures[i].bounds.Bottom -=  dY;
+      Figures[i].bounds.Left -=  dX;
+      Figures[i].bounds.Right -= dX;
+      anySelected:= true;
+    end;
+  end;
+  if not anySelected then
+    CanvasMove(dX, dY)
+  else
+    prevCrds := ScrToWorld(X,Y);
 end;
 
 constructor TDragTool.Create;
