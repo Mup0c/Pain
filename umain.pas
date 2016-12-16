@@ -340,7 +340,7 @@ begin
       SaveFigure(CurrentTool.GetFigure);
     end;
     for i := 0 to High(Figures) do begin
-      b := Figures[i].bounds;
+      b := Figures[i].GetBounds;
       if i = 0 then
         imageBounds := b;
       AdjustImageBounds(b.Left, b.Top);

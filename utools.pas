@@ -165,32 +165,32 @@ end;
 procedure TRectangleTool.SetParams;
 begin
   Inherited;
-    (Figure as TRectangle).brushColor := brushColor;
-    (Figure as TRectangle).brushStyle := brushStyle;
+  (Figure as TRectangle).brushColor := brushColor;
+  (Figure as TRectangle).brushStyle := brushStyle;
 end;
 
 procedure TEllipseTool.SetParams;
 begin
   Inherited;
-    (Figure as TEllipse).brushColor := brushColor;
-    (Figure as TEllipse).brushStyle := brushStyle;
+  (Figure as TEllipse).brushColor := brushColor;
+  (Figure as TEllipse).brushStyle := brushStyle;
 end;
 
 procedure TRoundRectTool.SetParams;
 begin
   Inherited;
-    (Figure as TRoundRect).brushColor := brushColor;
-    (Figure as TRoundRect).brushStyle := brushStyle;
-    (Figure as TRoundRect).roundingRadiusX := roundingRadiusX;
-    (Figure as TRoundRect).roundingRadiusY := roundingRadiusY;
+  (Figure as TRoundRect).brushColor := brushColor;
+  (Figure as TRoundRect).brushStyle := brushStyle;
+  (Figure as TRoundRect).roundingRadiusX := roundingRadiusX;
+  (Figure as TRoundRect).roundingRadiusY := roundingRadiusY;
 end;
 
 procedure TPolygonTool.SetParams;
 begin
   Inherited;
-    (Figure as TPolygon).brushColor := brushColor;
-    (Figure as TPolygon).brushStyle := brushStyle;
-    (Figure as TPolygon).numOfVertices := numOfVertices;
+  (Figure as TPolygon).brushColor := brushColor;
+  (Figure as TPolygon).brushStyle := brushStyle;
+  (Figure as TPolygon).numOfVertices := numOfVertices;
 end;
 
 procedure TTool.ToDefaultParams;
@@ -291,8 +291,8 @@ begin
       RoundingXEdit := RoundingEdit;
     end
     else begin
-      OnChange := @RoundingYEditChange;
-      RoundingYEdit := RoundingEdit;
+      OnChange := @RoundingYEditChange;        ///////передавать
+      RoundingYEdit := RoundingEdit;          //сделать функцию и присваивать result'у
     end;
   end;
   name := 'Rounding ' + XY + ':';
@@ -604,7 +604,7 @@ begin
   dY := prevCrds.Y - ScrToWorld(X,Y).Y;
   for i := 0 to High(Figures) do begin
     if Figures[i].Selected then begin
-      if Figures[i] is TPolyline then begin
+      if Figures[i] is TPolyline then begin              /////////ДОБАВИТЬ МЕТОД В FIGURES
         for j:=0 to high((Figures[i] as TPolyline).vertices) do begin
           (Figures[i] as TPolyline).vertices[j].Y -= dY;
           (Figures[i] as TPolyline).vertices[j].X -= dX;
