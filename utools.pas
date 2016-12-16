@@ -604,16 +604,7 @@ begin
   dY := prevCrds.Y - ScrToWorld(X,Y).Y;
   for i := 0 to High(Figures) do begin
     if Figures[i].Selected then begin
-      if Figures[i] is TPolyline then begin              /////////ДОБАВИТЬ МЕТОД В FIGURES
-        for j:=0 to high((Figures[i] as TPolyline).vertices) do begin
-          (Figures[i] as TPolyline).vertices[j].Y -= dY;
-          (Figures[i] as TPolyline).vertices[j].X -= dX;
-        end;
-      end;
-      Figures[i].bounds.Top -=  dY;
-      Figures[i].bounds.Bottom -=  dY;
-      Figures[i].bounds.Left -=  dX;
-      Figures[i].bounds.Right -= dX;
+      Figures[i].Move(dX,dY);
       anySelected:= true;
     end;
   end;

@@ -16,6 +16,7 @@ type
     bounds: TDoubleRect;
     Selected: boolean;
     function GetBounds: TDoubleRect; virtual;
+    procedure Move(dX, dY: double); virtual; abstract;
     procedure Draw(Canvas: TCanvas); virtual;
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); virtual; abstract;
     procedure AddPoint(X, Y: Integer; first: Boolean); virtual; abstract;
@@ -23,11 +24,13 @@ type
   end;
 
   TTwoPointFigure = class(TFigure)
+    procedure Move(dX, dY: double); override;
     procedure AddPoint(X, Y: Integer; first: Boolean); override;
   end;
 
   TPolyline = class(TFigure)
     vertices: array of TDoublePoint;
+    procedure Move(dX, dY: double); override;
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     procedure AddPoint(X, Y: Integer; first: Boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
@@ -79,6 +82,26 @@ var
 
 implementation
 
+procedure TTwoPointFigure.Move(dX, dY: double);
+begin
+  bounds.Top -= dY;
+  bounds.Bottom -= dY;
+  bounds.Left -= dX;
+  bounds.Right -= dX;
+end;
+
+procedure TPolyline.Move(dX, dY: double);
+var i:integer;
+begin
+  for i:=0 to high(vertices) do begin
+    vertices[i].Y -= dY;
+    vertices[i].X -= dX;
+  end;
+  bounds.Top -= dY;
+  bounds.Bottom -= dY;
+  bounds.Left -= dX;
+  bounds.Right -= dX;
+end;
 
 procedure TFigure.Draw(Canvas: TCanvas);
 begin
