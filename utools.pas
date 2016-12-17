@@ -36,7 +36,7 @@ type
     procedure SetParams; virtual;
     procedure ToDefaultParams; virtual;
     procedure AddWidthEdit(APanel: TPanel); virtual;
-    procedure AddRoundingEdit(APanel: TPanel; XY: char); virtual;
+    function AddRoundingEdit(APanel: TPanel; AEditorChange: TNotifyEvent): TSpinEdit; virtual;
     procedure AddBrushStyleEdit(APanel: TPanel);
     procedure AddPenStyleEdit(APanel: TPanel);
     procedure AddNumOfVerticesEdit(APanel: TPanel);
@@ -271,9 +271,8 @@ begin
   roundingRadiusX := RoundingXEdit.Value;
 end;
 
-procedure TTool.AddRoundingEdit(APanel: TPanel; XY: char);
+function TTool.AddRoundingEdit(APanel: TPanel; AEditorChange: TNotifyEvent): TSpinEdit;
 var
-  name: String;
   RoundingEdit: TSpinEdit;
 begin
   RoundingEdit := TSpinEdit.Create(APanel);
@@ -286,17 +285,9 @@ begin
     MaxValue := 1000;
     Value := 10;
     BorderSpacing.Around:= 5;
-    if xy = 'X' then begin
-      OnChange := @RoundingXEditChange;
-      RoundingXEdit := RoundingEdit;
-    end
-    else begin
-      OnChange := @RoundingYEditChange;        ///////передавать
-      RoundingYEdit := RoundingEdit;          //сделать функцию и присваивать result'у
-    end;
+    OnChange := AEditorChange;
+    Result := RoundingEdit;
   end;
-  name := 'Rounding ' + XY + ':';
-  AddLabel(name, APanel);
 end;
 
 procedure TTool.RoundingYEditChange(Sender: TObject);
@@ -535,8 +526,11 @@ procedure TRoundRectTool.Init(APanel: TPanel);
 begin
   UnselectAll;
   ParametersAvailable := true;
-  AddRoundingEdit(APanel, 'Y');
-  AddRoundingEdit(APanel, 'X');
+
+  RoundingYEdit := AddRoundingEdit(APanel, @RoundingYEditChange);
+  AddLabel('Rounding Y:', APanel);
+  RoundingXEdit := AddRoundingEdit(APanel, @RoundingXEditChange);
+  AddLabel('Rounding X:', APanel);
   AddBrushStyleEdit(APanel);
   AddPenStyleEdit(APanel);
   AddWidthEdit(APanel);
