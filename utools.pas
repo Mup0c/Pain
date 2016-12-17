@@ -37,7 +37,11 @@ type
     procedure ToDefaultParams; virtual;
     procedure AddWidthEdit(APanel: TPanel); virtual;
     function AddRoundingEdit(APanel: TPanel; AEditorChange: TNotifyEvent): TSpinEdit; virtual;
+    procedure OnDrawBrushStyleItem(
+      Control: TWinControl; Index: Integer; ARect: TRect; State: TOwnerDrawState);
     procedure AddBrushStyleEdit(APanel: TPanel);
+    procedure OnDrawLineStyleItem(Control: TWinControl;
+      Index: Integer; ARect: TRect; State: TOwnerDrawState);
     procedure AddPenStyleEdit(APanel: TPanel);
     procedure AddNumOfVerticesEdit(APanel: TPanel);
     procedure RoundingXEditChange(Sender: TObject); virtual;
@@ -300,7 +304,31 @@ begin
   penStyle := TFPPenStyle(PenStyleEdit.ItemIndex);
 end;
 
+procedure TTool.OnDrawLineStyleItem(Control: TWinControl;
+  Index: Integer; ARect: TRect; State: TOwnerDrawState);
+begin
+  with (Control as TComboBox).Canvas, ARect do begin
+    Brush.Style := bsSolid;
+    Brush.Color := clWhite;
+    Pen.Style := psClear;
+    Pen.Color := clWhite;
+    Top += 3;
+    Left += 3;
+    Right -= 3;
+    Bottom -= 3;
+    Rectangle(ARect);
+    Pen.Style := TFPPenStyle(Index);
+    Pen.Width := 3;
+    Pen.Color := clBlack;
+    Top += 6;
+    Bottom := ARect.Top;
+    Line(ARect);
+  end;
+end;
+
 procedure TTool.AddPenStyleEdit(APanel: TPanel);
+var
+  i:integer;
 begin
   PenStyleEdit := TComboBox.Create(APanel);
   With PenStyleEdit do begin
@@ -308,18 +336,16 @@ begin
     Left := 2;
     Top := 2;
     Align := altop;
-    Items.Add('─────────────────');
-    Items.Add('─ ─ ─ ─ ─ ─ ─ ─ ─');
-    Items.Add('• • • • • • • • •');
-    Items.Add('─ • ─ • ─ • ─ • ─');
-    Items.Add('─ • • ─ • • ─ • •');
+    for i := 0 to 4 do Items.Add('');
+    Style := csOwnerDrawFixed;
+    ReadOnly := True;
     ItemIndex := 0;
     AutoComplete := False;
     Font.Bold := True;
     Font.Size := 12;
     BorderSpacing.Around:= 5;
-    ReadOnly := True;
     OnChange := @PenStyleEditChange;
+    OnDrawItem := @OnDrawLineStyleItem;
   end;
   AddLabel('Pen Style:', APanel);
 end;
@@ -329,7 +355,33 @@ begin
   brushStyle := TFPBrushStyle(BrushStyleEdit.ItemIndex);
 end;
 
+procedure TTool.OnDrawBrushStyleItem(
+  Control: TWinControl; Index: Integer; ARect: TRect; State: TOwnerDrawState);
+begin
+  with (Control as TComboBox).Canvas, ARect do begin
+    Brush.Style := bsSolid;
+    Brush.Color := clWhite;
+    Top += 2;
+    Left += 2;
+    Right -= 2;
+    Bottom -= 2;
+    Rectangle(ARect);
+    if TFPBrushStyle(Index) = bsClear then begin
+      Brush.Color := clWhite;
+      Brush.Style := bsSolid;
+    end
+    else begin
+      Brush.Style := TFPBrushStyle(Index);
+      Brush.Color := clBlack;
+    end;
+    Pen.Color := clBlack;
+    Rectangle(ARect);
+  end;
+end;
+
 procedure TTool.AddBrushStyleEdit(APanel: TPanel);
+var
+  i: integer;
 begin
   BrushStyleEdit := TComboBox.Create(APanel);
   With BrushStyleEdit do begin
@@ -337,19 +389,14 @@ begin
     Left := 2;
     Top := 2;
     Align := altop;
-    Items.Add('Solid');
-    Items.Add('Clear');
-    Items.Add('Horizontal');
-    Items.Add('Vertical');
-    Items.Add('Diagonal 1');
-    Items.Add('Diagonal 2');
-    Items.Add('Cross');
-    Items.Add('DiagCross');
+    for i := 0 to 7 do Items.Add('');
     Font.Size := 10;
     ItemIndex := 0;
     BorderSpacing.Around:= 5;
     ReadOnly := True;
+    Style := csOwnerDrawFixed;
     OnChange := @BrushStyleEditChange;
+    OnDrawItem := @OnDrawBrushStyleItem;
   end;
   AddLabel('Brush Style:', APanel);
 end;
