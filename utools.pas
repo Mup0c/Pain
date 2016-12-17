@@ -526,7 +526,6 @@ procedure TRoundRectTool.Init(APanel: TPanel);
 begin
   UnselectAll;
   ParametersAvailable := true;
-
   RoundingYEdit := AddRoundingEdit(APanel, @RoundingYEditChange);
   AddLabel('Rounding Y:', APanel);
   RoundingXEdit := AddRoundingEdit(APanel, @RoundingXEditChange);

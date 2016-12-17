@@ -195,7 +195,7 @@ begin
   ToolParameters.Destroy;
   CurrentTool := ToolRegistry[(Sender as TBitBtn).Tag];
   if (Sender as TBitBtn).Tag = 0 then PaintField.Cursor := crSizeAll else
-    PaintField.Cursor := crCross;
+    PaintField.Cursor := crDefault;
   PanelInit;
   CurrentTool.Init(ToolParameters);
   CurrentTool.brushColor := SelectedBrushColor.Color;
