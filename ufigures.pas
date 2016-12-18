@@ -28,6 +28,11 @@ type
     procedure AddPoint(X, Y: Integer; first: Boolean); override;
   end;
 
+  TFilledFigure = class(TTwoPointFigure)
+    brushColor: TColor;
+    brushStyle: TFPBrushStyle;
+  end;
+
   TPolyline = class(TFigure)
     vertices: array of TDoublePoint;
     procedure Move(dX, dY: double); override;
@@ -36,16 +41,12 @@ type
     function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
-  TRectangle = class(TTwoPointFigure)
-    brushColor: TColor;
-    brushStyle: TFPBrushStyle;
+  TRectangle = class(TFilledFigure)
     procedure DrawFigure(Canvas:TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
-  TEllipse = class(TTwoPointFigure)
-    brushColor: TColor;
-    brushStyle: TFPBrushStyle;
+  TEllipse = class(TFilledFigure)
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
@@ -59,18 +60,14 @@ type
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
   end;
 
-  TRoundRect = class(TTwoPointFigure)
-    brushColor: TColor;
-    brushStyle: TFPBrushStyle;
+  TRoundRect = class(TFilledFigure)
     roundingRadiusX,  roundingRadiusY: integer;
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
   end;
 
-  TPolygon = class(TTwoPointFigure)
+  TPolygon = class(TFilledFigure)
     Vertices: array of TDoublePoint;
-    brushColor: TColor;
-    brushStyle: TFPBrushStyle;
     numOfVertices: integer;
     function GetBounds: TDoubleRect; override;
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
