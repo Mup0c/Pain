@@ -11,50 +11,73 @@ uses
 
 type
 
+  TFigureClass = class of TFigure;
+  TIntegerArray = array of integer;
+
   TParameter = class
+    procedure AddLabel(AName: String; APanel: TPanel); virtual;
+    procedure AddEditor(APanel: TPanel; Value: integer); virtual; abstract;
+    function GetValue(F: TFigure): integer; virtual; abstract;
+  end;
+
+  ArrayOfParameter = array of TParameter;
+
+  TWidthParameter = class(TParameter)
+    procedure AddEditor(APanel: TPanel; Value: Integer); override;
+    procedure WidthEditChange(Sender: TObject); virtual;
+  end;
+
+  TPenStyleParameter = class(TParameter)
+    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure PenStyleEditChange(Sender: TObject);
+    procedure OnDrawLineStyleItem(Control: TWinControl;
+      Index: Integer; ARect: TRect; State: TOwnerDrawState);
+  end;
+
+  TBrushStyleParameter = class(TParameter)
+    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure BrushStyleEditChange(Sender: TObject);
+    procedure OnDrawBrushStyleItem(Control: TWinControl;
+      Index: Integer; ARect: TRect; State: TOwnerDrawState);
+  end;
+
+  TVerticesNumberParameter = class(TParameter)
+    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure NumOfVerticesChange(Sender: TObject);
+  end;
+
+  TXRoundingParameter = class(TParameter)
+    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure RoundingXEditChange(Sender: TObject);
+  end;
+
+  TYRoundingParameter = class(TParameter)
+    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure RoundingYEditChange(Sender: TObject);
   end;
 
   TTool = class
-    WidthEdit: TSpinEdit;
-    RoundingXEdit: TSpinEdit;
-    RoundingYEdit: TSpinEdit;
-    parameters: array of TParameter;
+    FigureClass:TFigureClass;
+    Parameters: array of TParameter;
     bmpName: String;
     Figure: TFigure;
     thickness: Integer;
-    penColor: TColor;                                           ///////// раскидать в насделников
-    brushColor: TColor;
+    penColor: TColor;
     penStyle: TFPPenStyle;
-    brushStyle: TFPBrushStyle;
-    numOfVertices: integer;
+    brushColor: TColor;
     ParametersAvailable: boolean;
-    PenStyleEdit: TComboBox;
-    BrushStyleEdit: TComboBox;
-    NumOfVerticesEdit: TSpinEdit;
-    roundingRadiusX, roundingRadiusY: integer;
     function GetFigure: TFigure; virtual;
     procedure SetParams; virtual;
     procedure ToDefaultParams; virtual;
-    procedure AddWidthEdit(APanel: TPanel); virtual;
-    function AddRoundingEdit(APanel: TPanel; AEditorChange: TNotifyEvent): TSpinEdit; virtual;
-    procedure OnDrawBrushStyleItem(
-      Control: TWinControl; Index: Integer; ARect: TRect; State: TOwnerDrawState);
-    procedure AddBrushStyleEdit(APanel: TPanel);
-    procedure OnDrawLineStyleItem(Control: TWinControl;
-      Index: Integer; ARect: TRect; State: TOwnerDrawState);
-    procedure AddPenStyleEdit(APanel: TPanel);
-    procedure AddNumOfVerticesEdit(APanel: TPanel);
-    procedure RoundingXEditChange(Sender: TObject); virtual;
-    procedure RoundingYEditChange(Sender: TObject); virtual;
-    procedure NumOfVerticesChange(Sender: TObject);
-    procedure AddLabel(AName: String; APanel: TPanel);
-    procedure WidthEditChange(Sender: TObject); virtual;
-    procedure PenStyleEditChange(Sender: TObject);
-    procedure BrushStyleEditChange(Sender: TObject);
     procedure Init(APanel: TPanel); virtual; abstract;
     procedure MouseDown(X, Y: Integer); virtual; abstract;
     procedure MouseMove(X, Y: Integer); virtual;
     procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); virtual;
+  end;
+
+  TFilledFigureTool = class(TTool)
+    brushColour: TColor;
+    brushStyle: TFPBrushStyle;
   end;
 
   TPolylineTool = class(TTool)
@@ -63,7 +86,7 @@ type
     procedure MouseDown(X, Y: Integer); override;
   end;
 
-  TRectangleTool = class(TTool)
+  TRectangleTool = class(TFilledFigureTool)
     constructor Create;
     procedure SetParams; override;
     procedure ToDefaultParams; override;
@@ -71,7 +94,7 @@ type
     procedure MouseDown(X, Y: Integer); override;
   end;
 
-  TEllipseTool = class(TTool)
+  TEllipseTool = class(TFilledFigureTool)
     constructor Create;
     procedure SetParams; override;
     procedure ToDefaultParams; override;
@@ -85,7 +108,8 @@ type
     procedure MouseDown(X, Y: Integer); override;
   end;
 
-  TRoundRectTool = class(TTool)
+  TRoundRectTool = class(TFilledFigureTool)
+    roundingRadiusX, roundingRadiusY: integer;
     constructor Create;
     procedure SetParams; override;
     procedure ToDefaultParams; override;
@@ -93,7 +117,8 @@ type
     procedure MouseDown(X, Y: Integer); override;
   end;
 
-  TPolygonTool = class(TTool)
+  TPolygonTool = class(TFilledFigureTool)
+    numOfVertices: integer;
     constructor Create;
     procedure SetParams; override;
     procedure ToDefaultParams; override;
@@ -140,6 +165,9 @@ type
 
 var
   ToolRegistry: array of TTool;
+  InvalidateHandler: procedure of Object;
+  CurrentTool: TTool;
+
 
 implementation
 
@@ -183,7 +211,7 @@ end;
 procedure TRoundRectTool.SetParams;
 begin
   Inherited;
-  (Figure as TRoundRect).brushColor := brushColor;
+  (Figure as TRoundRect).brushColor := brushColor;               ////////через инхеритед
   (Figure as TRoundRect).brushStyle := brushStyle;
   (Figure as TRoundRect).roundingRadiusX := roundingRadiusX;
   (Figure as TRoundRect).roundingRadiusY := roundingRadiusY;
@@ -235,7 +263,7 @@ begin
     Figure.AddPoint(X, Y, false)
 end;
 
-procedure TTool.AddLabel(AName: String; APanel: TPanel);
+procedure TParameter.AddLabel(AName: String; APanel: TPanel);
 begin
   With TLabel.Create(APanel) do begin
     Parent := APanel;
@@ -249,12 +277,14 @@ begin
   end;
 end;
 
-procedure TTool.WidthEditChange(Sender: TObject);
+procedure TWidthParameter.WidthEditChange(Sender: TObject);
 begin
-  thickness := WidthEdit.Value;
+  CurrentTool.thickness := (Sender as TSpinEdit).Value
+ // thickness := WidthEdit.Value;
 end;
 
-procedure TTool.AddWidthEdit(APanel: TPanel);
+procedure TWidthParameter.AddEditor(APanel: TPanel; Value: Integer);
+var WidthEdit: TSpinEdit;
 begin
   WidthEdit := TSpinEdit.Create(APanel);
   With WidthEdit do begin
@@ -270,12 +300,13 @@ begin
   AddLabel('Thickness:', APanel);
 end;
 
-procedure TTool.RoundingXEditChange(Sender: TObject);
+procedure TXRoundingParameter.RoundingXEditChange(Sender: TObject);
 begin
-  roundingRadiusX := RoundingXEdit.Value;
+ // roundingRadiusX := RoundingXEdit.Value;
+  (CurrentTool as TRoundRectTool).roundingRadiusX := (Sender as TSpinEdit).Value;
 end;
 
-function TTool.AddRoundingEdit(APanel: TPanel; AEditorChange: TNotifyEvent): TSpinEdit;
+Procedure TXRoundingParameter.AddEditor(APanel: TPanel; Value: Integer);
 var
   RoundingEdit: TSpinEdit;
 begin
@@ -289,22 +320,43 @@ begin
     MaxValue := 1000;
     Value := 10;
     BorderSpacing.Around:= 5;
-    OnChange := AEditorChange;
-    Result := RoundingEdit;
+    OnChange := @RoundingXEditChange;
   end;
+  AddLabel('Rounding X:', APanel);
 end;
 
-procedure TTool.RoundingYEditChange(Sender: TObject);
+procedure TYRoundingParameter.RoundingYEditChange(Sender: TObject);
 begin
-  roundingRadiusY := RoundingYEdit.Value;
+ // roundingRadiusY := RoundingYEdit.Value;
+  (CurrentTool as TRoundRectTool).roundingRadiusY := (Sender as TSpinEdit).Value;
 end;
 
-procedure TTool.PenStyleEditChange(Sender: TObject);
+Procedure TYRoundingParameter.AddEditor(APanel: TPanel; Value: Integer);
+var
+  RoundingEdit: TSpinEdit;
 begin
-  penStyle := TFPPenStyle(PenStyleEdit.ItemIndex);
+  RoundingEdit := TSpinEdit.Create(APanel);
+  With RoundingEdit do begin
+    Parent := APanel;
+    Left := 2;
+    Top := 2;
+    Align := altop;
+    MinValue := 0;
+    MaxValue := 1000;
+    Value := 10;
+    BorderSpacing.Around:= 5;
+    OnChange := @RoundingYEditChange;
+  end;
+  AddLabel('Rounding Y:', APanel);
 end;
 
-procedure TTool.OnDrawLineStyleItem(Control: TWinControl;
+procedure TPenStyleParameter.PenStyleEditChange(Sender: TObject);
+begin
+ // penStyle := TFPPenStyle(PenStyleEdit.ItemIndex);
+  CurrentTool.penStyle := TFPPenStyle((sender as TComboBox).ItemIndex);
+end;
+
+procedure TPenstyleParameter.OnDrawLineStyleItem(Control: TWinControl;
   Index: Integer; ARect: TRect; State: TOwnerDrawState);
 begin
   with (Control as TComboBox).Canvas, ARect do begin
@@ -326,8 +378,10 @@ begin
   end;
 end;
 
-procedure TTool.AddPenStyleEdit(APanel: TPanel);
+procedure TPenstyleParameter.AddEditor(APanel: TPanel; Value: Integer);
 var
+  ////////////
+  PenStyleEdit: TComboBox;
   i:integer;
 begin
   PenStyleEdit := TComboBox.Create(APanel);
@@ -350,12 +404,13 @@ begin
   AddLabel('Pen Style:', APanel);
 end;
 
-procedure TTool.BrushStyleEditChange(Sender: TObject);
+procedure TBrushStyleParameter.BrushStyleEditChange(Sender: TObject);
 begin
-  brushStyle := TFPBrushStyle(BrushStyleEdit.ItemIndex);
+  //brushStyle := TFPBrushStyle(BrushStyleEdit.ItemIndex);
+  (CurrentTool as TFilledFigureTool).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex);
 end;
 
-procedure TTool.OnDrawBrushStyleItem(
+procedure TBrushStyleParameter.OnDrawBrushStyleItem(
   Control: TWinControl; Index: Integer; ARect: TRect; State: TOwnerDrawState);
 begin
   with (Control as TComboBox).Canvas, ARect do begin
@@ -379,8 +434,9 @@ begin
   end;
 end;
 
-procedure TTool.AddBrushStyleEdit(APanel: TPanel);
+procedure TBrushStyleParameter.AddEditor(APanel: TPanel; Value: Integer);
 var
+  BrushStyleEdit: TComboBox;
   i: integer;
 begin
   BrushStyleEdit := TComboBox.Create(APanel);
@@ -401,7 +457,10 @@ begin
   AddLabel('Brush Style:', APanel);
 end;
 
-procedure TTool.AddNumOfVerticesEdit(APanel: TPanel);
+procedure TVerticesNumberParameter.AddEditor(APanel: TPanel; Value: Integer);
+var
+  NumOfVerticesEdit: TSpinEdit;
+  /////
 begin
   NumOfVerticesEdit := TSpinEdit.Create(APanel);
   With NumOfVerticesEdit do begin
@@ -417,9 +476,10 @@ begin
   AddLabel('Vertices:', APanel);
 end;
 
-procedure TTool.NumOfVerticesChange(Sender: TObject);
+procedure TVerticesNumberParameter.NumOfVerticesChange(Sender: TObject);
 begin
-  NumOfVertices := NumOfVerticesEdit.Value;
+  //NumOfVertices := NumOfVerticesEdit.Value;
+  (CurrentTool as TPolygonTool).NumOfVertices := (Sender as TSpinEdit).Value;
 end;
 
 procedure TPolylineTool.MouseDown(X, Y: Integer);
@@ -442,11 +502,15 @@ begin
 end;
 
 procedure TPolylineTool.Init(APanel: TPanel);
+var i:integer;
 begin
   UnselectAll;
   ParametersAvailable := true;
-  AddPenStyleEdit(APanel);
-  AddWidthEdit(APanel);
+  SetLength(Parameters,2);
+  Parameters[0] := TWidthParameter.Create;
+  Parameters[1] := TPenStyleParameter.Create;
+  for i := High(Parameters) downto 0 do
+    Parameters[i].AddEditor(APanel, 0);
   ToDefaultParams;
 end;
 
@@ -464,12 +528,16 @@ begin
 end;
 
 procedure TRectangleTool.Init(APanel: TPanel);
+var i:integer;
 begin
   UnselectAll;
   ParametersAvailable := true;
-  AddBrushStyleEdit(APanel);
-  AddPenStyleEdit(APanel);
-  AddWidthEdit(APanel);
+  SetLength(Parameters,3);
+  Parameters[0] := TWidthParameter.Create;
+  Parameters[1] := TPenStyleParameter.Create;
+  Parameters[2] := TBrushStyleParameter.Create;
+  for i := High(Parameters) downto 0 do
+    Parameters[i].AddEditor(APanel, 0);
   ToDefaultParams;
 end;
 
@@ -547,12 +615,16 @@ begin
 end;
 
 procedure TEllipseTool.Init(APanel: TPanel);
+var i :integer;
 begin
   UnselectAll;
   ParametersAvailable := true;
-  AddBrushStyleEdit(APanel);
-  AddPenStyleEdit(APanel);
-  AddWidthEdit(APanel);
+  SetLength(Parameters,3);
+  Parameters[0] := TWidthParameter.Create;
+  Parameters[1] := TPenStyleParameter.Create;
+  Parameters[2] := TBrushStyleParameter.Create;
+  for i := High(Parameters) downto 0 do
+    Parameters[i].AddEditor(APanel, 0);
   ToDefaultParams;
 end;
 
@@ -570,16 +642,18 @@ begin
 end;
 
 procedure TRoundRectTool.Init(APanel: TPanel);
+var i: integer;
 begin
   UnselectAll;
   ParametersAvailable := true;
-  RoundingYEdit := AddRoundingEdit(APanel, @RoundingYEditChange);
-  AddLabel('Rounding Y:', APanel);
-  RoundingXEdit := AddRoundingEdit(APanel, @RoundingXEditChange);
-  AddLabel('Rounding X:', APanel);
-  AddBrushStyleEdit(APanel);
-  AddPenStyleEdit(APanel);
-  AddWidthEdit(APanel);
+  SetLength(Parameters,5);
+  Parameters[0] := TWidthParameter.Create;
+  Parameters[1] := TPenStyleParameter.Create;
+  Parameters[2] := TBrushStyleParameter.Create;
+  Parameters[3] := TXRoundingParameter.Create;
+  Parameters[4] := TYRoundingParameter.Create;
+  for i := High(Parameters) downto 0 do
+    Parameters[i].AddEditor(APanel, 0);
   ToDefaultParams;
 end;
 
@@ -597,11 +671,15 @@ begin
 end;
 
 procedure TLineTool.Init(APanel: TPanel);
+var i:integer;
 begin
   UnselectAll;
   ParametersAvailable := true;
-  AddPenStyleEdit(APanel);
-  AddWidthEdit(APanel);
+  SetLength(Parameters,2);
+  Parameters[0] := TWidthParameter.Create;
+  Parameters[1] := TPenStyleParameter.Create;
+  for i := High(Parameters) downto 0 do
+    Parameters[i].AddEditor(APanel, 0);
   ToDefaultParams;
 end;
 
@@ -619,13 +697,17 @@ begin
 end;
 
 procedure TPolygonTool.Init(APanel: TPanel);
+var i:integer;
 begin
   UnselectAll;
   ParametersAvailable := true;
-  AddBrushStyleEdit(APanel);
-  AddPenStyleEdit(APanel);
-  AddWidthEdit(APanel);
-  AddNumOfVerticesEdit(APanel);
+  SetLength(Parameters,4);
+  Parameters[0] := TWidthParameter.Create;
+  Parameters[1] := TPenStyleParameter.Create;
+  Parameters[2] := TBrushStyleParameter.Create;
+  Parameters[3] := TVerticesNumberParameter.Create;
+  for i := High(Parameters) downto 0 do
+    Parameters[i].AddEditor(APanel, 0);
   ToDefaultParams;
 end;
 

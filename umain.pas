@@ -82,7 +82,6 @@ type
 var
   MainScreen: TMainScreen;
   ScrollsChangingByCode, EditValueChangedByCode, isMouseDown: boolean;
-  CurrentTool: TTool;
   colors: array of array of TColor;
   paletteRows: integer = 2;
   paletteCols: integer = 3;
