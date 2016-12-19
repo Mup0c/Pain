@@ -14,6 +14,7 @@ type
     penColor: TColor;
     penStyle: TFPPenStyle;
     bounds: TDoubleRect;
+    brushColor: TColor;
     Selected: boolean;
     function GetBounds: TDoubleRect; virtual;
     procedure Move(dX, dY: double); virtual; abstract;
@@ -29,7 +30,7 @@ type
   end;
 
   TFilledFigure = class(TTwoPointFigure)
-    brushColor: TColor;
+    brushColour: TColor;
     brushStyle: TFPBrushStyle;
   end;
 

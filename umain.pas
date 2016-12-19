@@ -73,6 +73,8 @@ type
     procedure VerticalScrollBarChange(Sender: TObject);
     procedure PanelInit;
     procedure ButtonInit;
+    procedure DestroyPanelEditors;       ///////////////////////////
+    procedure CreatePanel;
   private
     { private declarations }
   public
@@ -182,11 +184,31 @@ begin
   end;
 end;
 
+procedure TMainScreen.DestroyPanelEditors;
+begin
+  ToolParameters.Destroy;
+end;
+
+procedure TMainScreen.CreatePanel;
+begin
+  PanelInit;
+  if CurrentTool.ParametersAvailable then
+  begin
+    VerticalScrollBar.Left := MainScreen.Width - 115;
+    ToolParameters.visible := true;
+  end
+  else
+    VerticalScrollBar.Left := MainScreen.Width - 15;
+end;
+
 procedure TMainScreen.FormCreate(Sender: TObject);
 begin
   DrawGridRepaint;
   ButtonInit;
   PanelInit;
+  InvalidateHandler:=@PaintField.Invalidate;
+  DestroyPanelHandler := @DestroyPanelEditors;
+  CreatePanelHandler:= @CreatePanel;
 end;
 
 procedure TMainScreen.ToolClick(Sender: TObject);
@@ -200,12 +222,12 @@ begin
   CurrentTool.brushColor := SelectedBrushColor.Color;
   CurrentTool.penColor := SelectedPenColor.Color;
   if CurrentTool.ParametersAvailable then
-    begin
-      VerticalScrollBar.Left := MainScreen.Width - 115;
-      ToolParameters.visible := true;
-    end
-    else
-      VerticalScrollBar.Left := MainScreen.Width - 15;
+  begin
+    VerticalScrollBar.Left := MainScreen.Width - 115;
+    ToolParameters.visible := true;
+  end
+  else
+    VerticalScrollBar.Left := MainScreen.Width - 15;
   PaintField.Invalidate;
 end;
 
@@ -239,17 +261,24 @@ end;
 
 procedure TMainScreen.DrawGridMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
-var aCol, aRow: integer;
+var aCol, aRow, i: integer;
 begin
   DrawGrid.MouseToCell(x,y,aCol,aRow);
   if Button = mbLeft then begin
     SelectedPenColor.Color := colors[aCol][aRow];
     CurrentTool.penColor := colors[aCol][aRow];
+    for i := 0 to High(Figures) do begin
+      If Figures[i].Selected then Figures[i].penColor:= colors[aCol][aRow];
+    end;
   end else
   if Button = mbRight then begin
     SelectedBrushColor.Color := colors[aCol][aRow];
     CurrentTool.brushColor := colors[aCol][aRow];
+    for i := 0 to High(Figures) do begin
+      If Figures[i].Selected then Figures[i].brushColor:= colors[aCol][aRow];
+    end;
   end;
+  PaintField.Invalidate;
 end;
 
 procedure TMainScreen.DrawGridDblClick(Sender: TObject);
@@ -334,7 +363,7 @@ var
 begin
   if Button = mbLeft then begin
     isMouseDown := false;
-    CurrentTool.MouseUp(X, Y, PaintField.Width, PaintField.Height, Shift);
+    CurrentTool.MouseUp(X, Y, PaintField.Width, PaintField.Height, Shift, ToolParameters);
     if CurrentTool.Figure <> nil then begin
       SaveFigure(CurrentTool.GetFigure);
     end;

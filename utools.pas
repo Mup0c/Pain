@@ -7,57 +7,57 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
   ExtCtrls, StdCtrls, Buttons, math, Spin,
-  UFigures, UTransform, LCLType, FPCanvas;
+  UFigures, UTransform, LCLType, FPCanvas, UAbout;
 
 type
 
   TFigureClass = class of TFigure;
-  TIntegerArray = array of integer;
+  //TIntegerArray = array of integer;
 
   TParameter = class
-    procedure AddLabel(AName: String; APanel: TPanel); virtual;
-    procedure AddEditor(APanel: TPanel; Value: integer); virtual; abstract;
+    procedure AddLabel(AName: String; APanel: TPanel; Selector: Boolean); virtual;
+    procedure AddEditor(APanel: TPanel; Value: integer; Selector: Boolean); virtual; abstract;
     function GetValue(F: TFigure): integer; virtual; abstract;
   end;
 
   ArrayOfParameter = array of TParameter;
 
   TWidthParameter = class(TParameter)
-    procedure AddEditor(APanel: TPanel; Value: Integer); override;
+    procedure AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean); override;
     procedure WidthEditChange(Sender: TObject); virtual;
   end;
 
   TPenStyleParameter = class(TParameter)
-    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure AddEditor(APanel: TPanel; Value: integer; Selector: Boolean);override;
     procedure PenStyleEditChange(Sender: TObject);
     procedure OnDrawLineStyleItem(Control: TWinControl;
       Index: Integer; ARect: TRect; State: TOwnerDrawState);
   end;
 
   TBrushStyleParameter = class(TParameter)
-    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure AddEditor(APanel: TPanel; Value: integer; Selector: Boolean);override;
     procedure BrushStyleEditChange(Sender: TObject);
     procedure OnDrawBrushStyleItem(Control: TWinControl;
       Index: Integer; ARect: TRect; State: TOwnerDrawState);
   end;
 
   TVerticesNumberParameter = class(TParameter)
-    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure AddEditor(APanel: TPanel; Value: integer; Selector: Boolean);override;
     procedure NumOfVerticesChange(Sender: TObject);
   end;
 
   TXRoundingParameter = class(TParameter)
-    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure AddEditor(APanel: TPanel; Value: integer; Selector: Boolean);override;
     procedure RoundingXEditChange(Sender: TObject);
   end;
 
   TYRoundingParameter = class(TParameter)
-    procedure AddEditor(APanel: TPanel; Value: integer);override;
+    procedure AddEditor(APanel: TPanel; Value: integer; Selector: Boolean);override;
     procedure RoundingYEditChange(Sender: TObject);
   end;
 
   TTool = class
-    FigureClass:TFigureClass;
+    FigureClassName: shortstring;
     Parameters: array of TParameter;
     bmpName: String;
     Figure: TFigure;
@@ -72,7 +72,7 @@ type
     procedure Init(APanel: TPanel); virtual; abstract;
     procedure MouseDown(X, Y: Integer); virtual; abstract;
     procedure MouseMove(X, Y: Integer); virtual;
-    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); virtual;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel); virtual;
   end;
 
   TFilledFigureTool = class(TTool)
@@ -151,25 +151,28 @@ type
     procedure Init(APanel: TPanel); override;
     procedure MouseMove(X, Y: Integer); override;
     procedure MouseDown(X, Y: Integer); override;
-    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); override;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel); override;
   end;
 
   TSelectorTool = class(TTool)
+    CommonParams: array of TParameter;
     constructor Create;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
-    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState); override;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel); override;
+    procedure FindAndAddCommonParameterEditors(APanel: TPanel);
   end;
 
 var
   ToolRegistry: array of TTool;
   InvalidateHandler: procedure of Object;
+  DestroyPanelHandler,CreatePanelHandler: procedure of Object;
   CurrentTool: TTool;
 
 
 implementation
 
-procedure TTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
+procedure TTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel);
 begin
 end;
 
@@ -242,13 +245,15 @@ begin
     Figure.AddPoint(X, Y, false)
 end;
 
-procedure TParameter.AddLabel(AName: String; APanel: TPanel);
+procedure TParameter.AddLabel(AName: String; APanel: TPanel; Selector: Boolean);
 begin
   With TLabel.Create(APanel) do begin
     Parent := APanel;
     AutoSize := false;
-    Left := 2;
-    Top := 2;
+    if not selector then begin
+      Left := 2;
+      Top := 2;
+    end;
     Align := altop;
     BorderSpacing.Around:= 5;
     Font.Size := 10;
@@ -257,11 +262,18 @@ begin
 end;
 
 procedure TWidthParameter.WidthEditChange(Sender: TObject);
+var i:integer;
 begin
-  CurrentTool.thickness := (Sender as TSpinEdit).Value
+  if CurrentTool.ClassName <> TSelectorTool.ClassName then
+    CurrentTool.thickness := (Sender as TSpinEdit).Value
+  else
+    for i:=0 to High(Figures) do
+      if Figures[i].Selected then
+        Figures[i].thickness := (Sender as TSpinEdit).Value;
+  InvalidateHandler;
 end;
 
-procedure TWidthParameter.AddEditor(APanel: TPanel; Value: Integer);
+procedure TWidthParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var WidthEdit: TSpinEdit;
 begin
   WidthEdit := TSpinEdit.Create(APanel);
@@ -275,15 +287,22 @@ begin
     BorderSpacing.Around:= 5;
     OnChange := @WidthEditChange;
   end;
-  AddLabel('Thickness:', APanel);
+  AddLabel('Thickness:', APanel, Selector);
 end;
 
 procedure TXRoundingParameter.RoundingXEditChange(Sender: TObject);
+var i:integer;
 begin
-  (CurrentTool as TRoundRectTool).roundingRadiusX := (Sender as TSpinEdit).Value;
+  if CurrentTool.ClassName <> TSelectorTool.ClassName then
+    (CurrentTool as TRoundRectTool).roundingRadiusX := (Sender as TSpinEdit).Value
+  else
+    for i:=0 to High(Figures) do
+      if Figures[i].Selected then
+        (Figures[i] as TRoundRect).roundingRadiusX := (Sender as TSpinEdit).Value;
+  InvalidateHandler;
 end;
 
-Procedure TXRoundingParameter.AddEditor(APanel: TPanel; Value: Integer);
+Procedure TXRoundingParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var
   RoundingEdit: TSpinEdit;
 begin
@@ -299,15 +318,22 @@ begin
     BorderSpacing.Around:= 5;
     OnChange := @RoundingXEditChange;
   end;
-  AddLabel('Rounding X:', APanel);
+  AddLabel('Rounding X:', APanel, Selector);
 end;
 
 procedure TYRoundingParameter.RoundingYEditChange(Sender: TObject);
+var i:integer;
 begin
-  (CurrentTool as TRoundRectTool).roundingRadiusY := (Sender as TSpinEdit).Value;
+  if CurrentTool.ClassName <> TSelectorTool.ClassName then
+    (CurrentTool as TRoundRectTool).roundingRadiusY := (Sender as TSpinEdit).Value
+  else
+    for i:=0 to High(Figures) do
+      if Figures[i].Selected then
+        (Figures[i] as TRoundRect).roundingRadiusY := (Sender as TSpinEdit).Value;
+  InvalidateHandler;
 end;
 
-Procedure TYRoundingParameter.AddEditor(APanel: TPanel; Value: Integer);
+Procedure TYRoundingParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var
   RoundingEdit: TSpinEdit;
 begin
@@ -323,12 +349,20 @@ begin
     BorderSpacing.Around:= 5;
     OnChange := @RoundingYEditChange;
   end;
-  AddLabel('Rounding Y:', APanel);
+  AddLabel('Rounding Y:', APanel, Selector);
 end;
 
 procedure TPenStyleParameter.PenStyleEditChange(Sender: TObject);
+var i:integer;
 begin
-  CurrentTool.penStyle := TFPPenStyle((sender as TComboBox).ItemIndex);
+  if CurrentTool.ClassName <> TSelectorTool.ClassName then
+    CurrentTool.penStyle := TFPPenStyle((sender as TComboBox).ItemIndex)
+  else
+    for i:=0 to High(Figures) do
+      if Figures[i].Selected then
+        Figures[i].penStyle := TFPPenStyle((sender as TComboBox).ItemIndex);
+  InvalidateHandler;
+
 end;
 
 procedure TPenstyleParameter.OnDrawLineStyleItem(Control: TWinControl;
@@ -353,7 +387,7 @@ begin
   end;
 end;
 
-procedure TPenstyleParameter.AddEditor(APanel: TPanel; Value: Integer);
+procedure TPenstyleParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var
   PenStyleEdit: TComboBox;
   i:integer;
@@ -375,12 +409,20 @@ begin
     OnChange := @PenStyleEditChange;
     OnDrawItem := @OnDrawLineStyleItem;
   end;
-  AddLabel('Pen Style:', APanel);
+  AddLabel('Pen Style:', APanel, Selector);
 end;
 
 procedure TBrushStyleParameter.BrushStyleEditChange(Sender: TObject);
+var i:integer;
 begin
-  (CurrentTool as TFilledFigureTool).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex);
+  if CurrentTool.ClassName <> TSelectorTool.ClassName then
+    (CurrentTool as TFilledFigureTool).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex)
+  else
+    for i:=0 to High(Figures) do
+      if Figures[i].Selected then
+        (Figures[i] as TFilledFigure).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex);
+  InvalidateHandler;
+
 end;
 
 procedure TBrushStyleParameter.OnDrawBrushStyleItem(
@@ -407,7 +449,7 @@ begin
   end;
 end;
 
-procedure TBrushStyleParameter.AddEditor(APanel: TPanel; Value: Integer);
+procedure TBrushStyleParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var
   BrushStyleEdit: TComboBox;
   i: integer;
@@ -427,10 +469,10 @@ begin
     OnChange := @BrushStyleEditChange;
     OnDrawItem := @OnDrawBrushStyleItem;
   end;
-  AddLabel('Brush Style:', APanel);
+  AddLabel('Brush Style:', APanel, Selector);
 end;
 
-procedure TVerticesNumberParameter.AddEditor(APanel: TPanel; Value: Integer);
+procedure TVerticesNumberParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var
   NumOfVerticesEdit: TSpinEdit;
   /////
@@ -446,13 +488,19 @@ begin
     BorderSpacing.Around:= 5;
     OnChange := @NumOfVerticesChange;
   end;
-  AddLabel('Vertices:', APanel);
+  AddLabel('Vertices:', APanel, Selector);
 end;
 
 procedure TVerticesNumberParameter.NumOfVerticesChange(Sender: TObject);
+var i:integer;
 begin
-  //NumOfVertices := NumOfVerticesEdit.Value;
-  (CurrentTool as TPolygonTool).NumOfVertices := (Sender as TSpinEdit).Value;
+  if CurrentTool.ClassName <> TSelectorTool.ClassName then
+    (CurrentTool as TPolygonTool).NumOfVertices := (Sender as TSpinEdit).Value
+  else
+    for i:=0 to High(Figures) do
+      if Figures[i].Selected then
+       (Figures[i] as TPolygon).NumOfVertices := (Sender as TSpinEdit).Value;
+  InvalidateHandler;
 end;
 
 procedure TPolylineTool.MouseDown(X, Y: Integer);
@@ -472,6 +520,7 @@ constructor TPolylineTool.Create;
 begin
   Inherited;
   bmpName := 'icons/Polyline.bmp';
+  FigureClassName:= 'TPolyline';
 end;
 
 procedure TPolylineTool.Init(APanel: TPanel);
@@ -483,7 +532,7 @@ begin
   Parameters[0] := TWidthParameter.Create;
   Parameters[1] := TPenStyleParameter.Create;
   for i := High(Parameters) downto 0 do
-    Parameters[i].AddEditor(APanel, 0);
+    Parameters[i].AddEditor(APanel, 0, False);
   ToDefaultParams;
 end;
 
@@ -498,6 +547,7 @@ constructor TRectangleTool.Create;
 begin
   Inherited;
   bmpName := 'icons/Rectangle.bmp';
+  FigureClassName:= 'TRectangle';
 end;
 
 procedure TRectangleTool.Init(APanel: TPanel);
@@ -510,7 +560,7 @@ begin
   Parameters[1] := TPenStyleParameter.Create;
   Parameters[2] := TBrushStyleParameter.Create;
   for i := High(Parameters) downto 0 do
-    Parameters[i].AddEditor(APanel, 0);
+    Parameters[i].AddEditor(APanel, 0, False);
   ToDefaultParams;
 end;
 
@@ -526,10 +576,46 @@ begin
   bmpName := 'icons/Selector.bmp';
 end;
 
-procedure TSelectorTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
-var i: Integer;
+procedure TSelectorTool.FindAndAddCommonParameterEditors(APanel: TPanel);
+var
+  first,found:boolean;
+  i,j,k,m:integer;
+begin
+  DestroyPanelHandler;
+  CreatePanelHandler;
+  SetLength(CommonParams,0);
+  first := True;                                                                                   //выделить2 раза полиган и линию баг
+  for i := 0 to High(Figures) do begin
+    if Figures[i].Selected then begin
+      for j := 0 to high(ToolRegistry) do begin
+        if Figures[i].ClassName = ToolRegistry[j].FigureClassName then begin
+          if first then begin                                     //CommonParams[0] := ToolRegistry[j].Parameters[k].AddEditor(APanel,0);
+            CommonParams := ToolRegistry[j].Parameters;
+            first := false;
+          end else begin
+            for m:= 0 to high(CommonParams) do begin
+              found := false;
+              for k := 0 to high(ToolRegistry[j].Parameters) do begin
+                if ToolRegistry[j].Parameters[k].ClassName = CommonParams[m].ClassName then
+                  found := true;
+              end;
+              if not found then CommonParams[m] := nil;
+            end;
+          end;
+        end;
+      end;                                                                                                     ///TOOLREGISTRY
+    end;
+  end;
+  For i:= high(CommonParams) downto 0 do
+    if CommonParams[i] <> nil then
+      CommonParams[i].AddEditor(APanel,0, True);
+end;
+
+procedure TSelectorTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel);
+var i,j,k,m: Integer;
   boundsWithWidth:TDoubleRect;
   th: Double;
+  first,found: Boolean;
 begin
   with Figure.bounds do begin
     if (Left = Right) or (Top = Bottom) then begin
@@ -567,11 +653,12 @@ begin
     end;
   end;
   Figure := nil;
+  FindAndAddCommonParameterEditors(Apanel);
 end;
 
 procedure TSelectorTool.Init(APanel: TPanel);
 begin
-  ParametersAvailable := false;
+  ParametersAvailable := true;
 end;
 
 procedure TEllipseTool.MouseDown(X, Y: Integer);
@@ -585,6 +672,7 @@ constructor TEllipseTool.Create;
 begin
   Inherited;
   bmpName := 'icons/Ellipse.bmp';
+  FigureClassName:= 'TEllipse';
 end;
 
 procedure TEllipseTool.Init(APanel: TPanel);
@@ -597,7 +685,7 @@ begin
   Parameters[1] := TPenStyleParameter.Create;
   Parameters[2] := TBrushStyleParameter.Create;
   for i := High(Parameters) downto 0 do
-    Parameters[i].AddEditor(APanel, 0);
+    Parameters[i].AddEditor(APanel, 0, False);
   ToDefaultParams;
 end;
 
@@ -612,6 +700,7 @@ constructor TRoundRectTool.Create;
 begin
   Inherited;
   bmpName := 'icons/RoundRect.bmp';
+  FigureClassName:= 'TRoundRect';
 end;
 
 procedure TRoundRectTool.Init(APanel: TPanel);
@@ -624,10 +713,10 @@ begin
   Parameters[1] := TPenStyleParameter.Create;
   Parameters[2] := TBrushStyleParameter.Create;
   Parameters[3] := TXRoundingParameter.Create;
-  Parameters[4] := TYRoundingParameter.Create;
+  Parameters[4] := TYRoundingParameter.Create;                                                                            ///////добавить наследование с постоянной длиной массива параметерс
   for i := High(Parameters) downto 0 do
-    Parameters[i].AddEditor(APanel, 0);
-  ToDefaultParams;
+    Parameters[i].AddEditor(APanel, 0, False);
+  ToDefaultParams;                                                                                                  //get set params поработать
 end;
 
 procedure TLineTool.MouseDown(X, Y: Integer);
@@ -641,6 +730,7 @@ constructor TLineTool.Create;
 begin
   Inherited;
   bmpName := 'icons/Line.bmp';
+  FigureClassName:= 'TLine';
 end;
 
 procedure TLineTool.Init(APanel: TPanel);
@@ -652,7 +742,7 @@ begin
   Parameters[0] := TWidthParameter.Create;
   Parameters[1] := TPenStyleParameter.Create;
   for i := High(Parameters) downto 0 do
-    Parameters[i].AddEditor(APanel, 0);
+    Parameters[i].AddEditor(APanel, 0, False);
   ToDefaultParams;
 end;
 
@@ -667,6 +757,7 @@ constructor TPolygonTool.Create;
 begin
   Inherited;
   bmpName := 'icons/Polygon.bmp';
+  FigureClassName:= 'TPolygon';
 end;
 
 procedure TPolygonTool.Init(APanel: TPanel);
@@ -680,7 +771,7 @@ begin
   Parameters[2] := TBrushStyleParameter.Create;
   Parameters[3] := TVerticesNumberParameter.Create;
   for i := High(Parameters) downto 0 do
-    Parameters[i].AddEditor(APanel, 0);
+    Parameters[i].AddEditor(APanel, 0, False);
   ToDefaultParams;
 end;
 
@@ -772,7 +863,7 @@ begin
   Figure.AddPoint(X, Y, false);
 end;
 
-procedure TZoomToTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState);
+procedure TZoomToTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel);
 var Bottom, Top, Right, Left: Double;
 begin
   Top := Figure.bounds.Top;
