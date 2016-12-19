@@ -78,6 +78,8 @@ type
   TFilledFigureTool = class(TTool)
     brushColour: TColor;
     brushStyle: TFPBrushStyle;
+    procedure SetParams; override;
+    procedure ToDefaultParams; override;
   end;
 
   TPolylineTool = class(TTool)
@@ -88,16 +90,12 @@ type
 
   TRectangleTool = class(TFilledFigureTool)
     constructor Create;
-    procedure SetParams; override;
-    procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
   end;
 
   TEllipseTool = class(TFilledFigureTool)
     constructor Create;
-    procedure SetParams; override;
-    procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
   end;
@@ -194,25 +192,16 @@ begin
   Figure.penStyle := penStyle;
 end;
 
-procedure TRectangleTool.SetParams;
+procedure TFilledFigureTool.SetParams;
 begin
   Inherited;
-  (Figure as TRectangle).brushColor := brushColor;
-  (Figure as TRectangle).brushStyle := brushStyle;
-end;
-
-procedure TEllipseTool.SetParams;
-begin
-  Inherited;
-  (Figure as TEllipse).brushColor := brushColor;
-  (Figure as TEllipse).brushStyle := brushStyle;
+  (Figure as TFilledFigure).brushColor := brushColor;
+  (Figure as TFilledFigure).brushStyle := brushStyle;
 end;
 
 procedure TRoundRectTool.SetParams;
 begin
   Inherited;
-  (Figure as TRoundRect).brushColor := brushColor;               ////////через инхеритед
-  (Figure as TRoundRect).brushStyle := brushStyle;
   (Figure as TRoundRect).roundingRadiusX := roundingRadiusX;
   (Figure as TRoundRect).roundingRadiusY := roundingRadiusY;
 end;
@@ -220,8 +209,6 @@ end;
 procedure TPolygonTool.SetParams;
 begin
   Inherited;
-  (Figure as TPolygon).brushColor := brushColor;
-  (Figure as TPolygon).brushStyle := brushStyle;
   (Figure as TPolygon).numOfVertices := numOfVertices;
 end;
 
@@ -231,13 +218,7 @@ begin
   penStyle := psSolid;
 end;
 
-procedure TRectangleTool.ToDefaultParams;
-begin
-  Inherited;
-  brushStyle := bsSolid;
-end;
-
-procedure TEllipseTool.ToDefaultParams;
+procedure TFilledFigureTool.ToDefaultParams;
 begin
   Inherited;
   brushStyle := bsSolid;
@@ -246,7 +227,6 @@ end;
 procedure TRoundRectTool.ToDefaultParams;
 begin
   Inherited;
-  brushStyle := bsSolid;
   roundingRadiusX := 10;
   roundingRadiusY := 10;
 end;
@@ -254,7 +234,6 @@ end;
 procedure TPolygonTool.ToDefaultParams;
 begin
   Inherited;
-  brushStyle := bsSolid;
   numOfVertices := 3;
 end;
 
@@ -280,7 +259,6 @@ end;
 procedure TWidthParameter.WidthEditChange(Sender: TObject);
 begin
   CurrentTool.thickness := (Sender as TSpinEdit).Value
- // thickness := WidthEdit.Value;
 end;
 
 procedure TWidthParameter.AddEditor(APanel: TPanel; Value: Integer);
@@ -302,7 +280,6 @@ end;
 
 procedure TXRoundingParameter.RoundingXEditChange(Sender: TObject);
 begin
- // roundingRadiusX := RoundingXEdit.Value;
   (CurrentTool as TRoundRectTool).roundingRadiusX := (Sender as TSpinEdit).Value;
 end;
 
@@ -327,7 +304,6 @@ end;
 
 procedure TYRoundingParameter.RoundingYEditChange(Sender: TObject);
 begin
- // roundingRadiusY := RoundingYEdit.Value;
   (CurrentTool as TRoundRectTool).roundingRadiusY := (Sender as TSpinEdit).Value;
 end;
 
@@ -352,7 +328,6 @@ end;
 
 procedure TPenStyleParameter.PenStyleEditChange(Sender: TObject);
 begin
- // penStyle := TFPPenStyle(PenStyleEdit.ItemIndex);
   CurrentTool.penStyle := TFPPenStyle((sender as TComboBox).ItemIndex);
 end;
 
@@ -380,7 +355,6 @@ end;
 
 procedure TPenstyleParameter.AddEditor(APanel: TPanel; Value: Integer);
 var
-  ////////////
   PenStyleEdit: TComboBox;
   i:integer;
 begin
@@ -406,7 +380,6 @@ end;
 
 procedure TBrushStyleParameter.BrushStyleEditChange(Sender: TObject);
 begin
-  //brushStyle := TFPBrushStyle(BrushStyleEdit.ItemIndex);
   (CurrentTool as TFilledFigureTool).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex);
 end;
 
