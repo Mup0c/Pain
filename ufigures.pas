@@ -5,9 +5,11 @@ unit UFigures;
 interface
 
 uses
-  UTransform, windows, Classes, SysUtils, Graphics, FPCanvas, LCL, math;
+  UTransform, windows, Classes, SysUtils, Graphics, FPCanvas, LCL, math, TypInfo;
 
 type
+
+  StrArr = array of String;
 
   TFigure = class
     thickness: integer;
@@ -22,6 +24,7 @@ type
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); virtual; abstract;
     procedure AddPoint(X, Y: Integer; first: Boolean); virtual; abstract;
     function IsIntersect(ARect: TDoubleRect): boolean; virtual; abstract;
+    function Save: StrArr; virtual;
   end;
 
   TTwoPointFigure = class(TFigure)
@@ -32,6 +35,7 @@ type
   TFilledFigure = class(TTwoPointFigure)
     brushColour: TColor;
     brushStyle: TFPBrushStyle;
+    function Save: StrArr; override;
   end;
 
   TPolyline = class(TFigure)
@@ -40,6 +44,7 @@ type
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     procedure AddPoint(X, Y: Integer; first: Boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
+    function Save: StrArr; override;
   end;
 
   TRectangle = class(TFilledFigure)
@@ -65,6 +70,7 @@ type
     roundingRadiusX,  roundingRadiusY: integer;
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
+    function Save: StrArr; override;
   end;
 
   TPolygon = class(TFilledFigure)
@@ -73,12 +79,67 @@ type
     function GetBounds: TDoubleRect; override;
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
+    function Save: StrArr; override;
   end;
 
 var
   Figures: array of TFigure;
 
 implementation
+
+function TFigure.Save: StrArr;
+begin
+  SetLength(Result, 5);
+  Result[0] := ClassName;
+  with Bounds do
+  Result[1] := FloatToStr(Top) + ' ' +
+               FloatToStr(Left) + ' ' +
+               FloatToStr(Bottom) + ' ' +
+               FloatToStr(Right);
+  Result[2] := IntToStr(thickness);
+  Result[3] := GetEnumName(TypeInfo(TFPPenStyle),ord(penStyle));
+  Result[4] := ColorToString(penColor);
+end;
+
+function TPolyLine.Save: StrArr;
+var
+  i: integer;
+begin
+  SetLength(Result, 5);
+  Result[0] := ClassName;
+  for i := Low(vertices) to High(vertices) do
+    Result[1] := Result[1] + ' ' + FloatToStr(vertices[i].X) + ' ' + FloatToStr(vertices[i].Y);
+  Result[2] := IntToStr(thickness);
+  Result[3] := GetEnumName(TypeInfo(TFPPenStyle),ord(penStyle));
+  Result[4] := ColorToString(penColor);
+end;
+
+function TFilledFigure.Save: StrArr;
+begin
+  Inherited;
+  Result := Inherited;
+  SetLength(Result, Length(Result) + 2);
+  Result[High(Result) - 1] := GetEnumName(TypeInfo(TBrushStyle),ord(brushStyle));
+  Result[High(Result)] := ColorToString(brushColor);
+end;
+
+function TRoundRect.Save: StrArr;
+begin
+  Inherited;
+  Result := Inherited;
+  SetLength(Result, Length(Result) + 2);
+  Result[High(Result) - 1] := IntToStr(roundingRadiusX);
+  Result[High(Result)] := IntToStr(roundingRadiusY);
+end;
+
+function TPolygon.Save: StrArr;
+begin
+Inherited;
+  Result := Inherited;
+  SetLength(Result, Length(Result) + 1);
+  Result[High(Result)] := IntToStr(numOfVertices);
+end;                                                   /////////////////////////////////////ON EXIT CLICK спросить сохранить ли
+
 
 procedure TTwoPointFigure.Move(dX, dY: double);
 begin

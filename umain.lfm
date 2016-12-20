@@ -1,7 +1,7 @@
 object MainScreen: TMainScreen
-  Left = 1108
+  Left = 1364
   Height = 608
-  Top = 767
+  Top = 541
   Width = 1035
   Caption = 'Paint alpha dark_moon_edition'
   ClientHeight = 588
@@ -266,6 +266,15 @@ object MainScreen: TMainScreen
         ShortCut = 16474
         Visible = False
         OnClick = MenuUndoClick
+      end
+      object MenuSave: TMenuItem
+        Caption = 'Save'
+        ShortCut = 16467
+        OnClick = MenuSaveClick
+      end
+      object MenuSaveAs: TMenuItem
+        Caption = 'Save as'
+        OnClick = MenuSaveAsClick
       end
       object MenuClear: TMenuItem
         Caption = 'Clear'

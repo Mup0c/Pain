@@ -16,6 +16,8 @@ type
   TMainScreen = class(TForm)
     ColorDialog: TColorDialog;
     DrawGrid: TDrawGrid;
+    MenuSave: TMenuItem;
+    MenuSaveAs: TMenuItem;
     ScaleEdit: TFloatSpinEdit;
     MenuFullExtent: TMenuItem;
     MenuUndo: TMenuItem;
@@ -41,6 +43,7 @@ type
     ColsEdit: TSpinEdit;
     RowsEdit: TSpinEdit;
     ToolPanel: TPanel;
+    SaveImageDialog: TSaveDialog;
     procedure ColsEditChange(Sender: TObject);
     procedure DrawGridDblClick(Sender: TObject);
     procedure DrawGridMouseDown(Sender: TObject; Button: TMouseButton;
@@ -53,6 +56,10 @@ type
     procedure MenuAboutClick(Sender: TObject);
     procedure MenuClearClick(Sender: TObject);
     procedure MenuFullExtentClick(Sender: TObject);
+    procedure MenuSaveAsClick(Sender: TObject);
+    procedure MenuSaveClick(Sender: TObject);
+    procedure WriteToFile(AFileName: string);
+    procedure UpdateFileName;
     procedure MenuUndoClick(Sender: TObject);
     procedure PaintFieldMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -73,7 +80,7 @@ type
     procedure VerticalScrollBarChange(Sender: TObject);
     procedure PanelInit;
     procedure ButtonInit;
-    procedure DestroyPanelEditors;       ///////////////////////////
+    procedure DestroyPanelEditors;
     procedure CreatePanel;
   private
     { private declarations }
@@ -87,7 +94,9 @@ var
   colors: array of array of TColor;
   paletteRows: integer = 2;
   paletteCols: integer = 3;
+  Signature: string = '@PaintEmulatorFormat';
   ToolParameters: TPanel;
+  ImageName, LastSavedFileName: string;
 
 implementation
 
@@ -132,16 +141,96 @@ begin
   end;
 end;
 
+procedure TMainScreen.MenuSaveAsClick(Sender: TObject);
+var
+  f: TextFile;
+  Reply, BoxStyle: Integer;
+begin
+  SaveImageDialog := TSaveDialog.Create(self);
+  with SaveImageDialog do begin
+    InitialDir := GetCurrentDir;
+    Title      := 'Save image as Paint Emulator Format';
+    DefaultExt := 'pef';
+    Filter     := 'Paint Emulator Format|*.pef|';
+    FileName   := ImageName;
+  end;
+  if SaveImageDialog.Execute then begin
+    if FileExists(SaveImageDialog.FileName) then begin
+      BoxStyle := MB_ICONQUESTION + MB_YESNO;
+      Reply := Application.MessageBox('Overwrite file?', 'File already exists', BoxStyle);
+      if (Reply = IDYES) then begin
+        WriteToFile(SaveImageDialog.FileName);
+      end
+      else begin
+        SaveImageDialog.Free;
+        MenuSaveAsClick(TObject.Create);
+        Exit;
+      end;
+    end
+    else begin
+      WriteToFile(SaveImageDialog.FileName);
+    end;
+  end;
+  SaveImageDialog.Free;
+end;
+
+procedure TMainScreen.MenuSaveClick(Sender: TObject);
+begin
+  if (LastSavedFileName = ImageName) then
+    WriteToFile(ImageName)
+  else
+    MenuSaveAsClick(TObject.Create);
+end;
+
+procedure TMainScreen.WriteToFile(AFileName: string);
+var
+  f: TextFile;
+  i,j: integer;
+begin
+  AssignFile(f,AFileName);
+  DeleteFile(AFileName);
+  Rewrite(f);
+  Writeln(f, Signature);
+  Writeln(f, length(Figures));
+  for i := Low(Figures) to High(Figures) do
+  begin
+    for j := low((Figures[i]).Save) to high((Figures[i]).Save) do
+      Writeln(f,(Figures[i]).Save[j]);
+  end;
+  CloseFile(f);
+  ImageName := AFileName;
+  LastSavedFileName := AFileName;
+  FileWasChanged := False;
+  UpdateFileName;
+end;
+
+ procedure TMainScreen.UpdateFileName;
+ begin
+   MainScreen.Caption := 'paint_dark_moon_editi0n - ' + ImageName;
+   if FileWasChanged then MainScreen.Caption := MainScreen.Caption + '*';
+ end;
+
 procedure TMainScreen.MenuUndoClick(Sender: TObject);
 begin
-  if Length(Figures) > 0 then
+  if Length(Figures) > 0 then                             ////
     SetLength(Figures,length(Figures) - 1);
   MainScreen.Repaint;
 end;
 
 procedure TMainScreen.MenuExitClick(Sender: TObject);
+var
+  IntMessageDialog: integer;
 begin
-  Application.Terminate;
+  If FileWasChanged then begin
+    IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo],0);
+    if IntMessageDialog = mrYes then begin
+        MenuSaveAsClick(TObject.Create);
+        Application.Terminate;
+      end else
+        Application.Terminate;
+  end
+  else
+    Application.Terminate;
 end;
 
 procedure TMainScreen.PanelInit;
@@ -186,7 +275,7 @@ end;
 
 procedure TMainScreen.DestroyPanelEditors;
 begin
-  ToolParameters.Destroy;
+  ToolParameters.Free;
 end;
 
 procedure TMainScreen.CreatePanel;
@@ -209,11 +298,12 @@ begin
   InvalidateHandler:=@PaintField.Invalidate;
   DestroyPanelHandler := @DestroyPanelEditors;
   CreatePanelHandler:= @CreatePanel;
+  ImageName := 'Unnamed.pef';
 end;
 
 procedure TMainScreen.ToolClick(Sender: TObject);
 begin
-  ToolParameters.Destroy;
+  ToolParameters.Free;
   CurrentTool := ToolRegistry[(Sender as TBitBtn).Tag];
   if (Sender as TBitBtn).Tag = 0 then PaintField.Cursor := crSizeAll else
     PaintField.Cursor := crDefault;
@@ -374,6 +464,8 @@ begin
       AdjustImageBounds(b.Left, b.Top);
       AdjustImageBounds(b.Right, b.Bottom);
     end;
+    if FileWasChanged then
+      UpdateFileName;
     PaintField.Invalidate;
   end;
 end;

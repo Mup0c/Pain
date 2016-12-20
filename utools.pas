@@ -168,12 +168,14 @@ var
   InvalidateHandler: procedure of Object;
   DestroyPanelHandler,CreatePanelHandler: procedure of Object;
   CurrentTool: TTool;
+  FileWasChanged: boolean;
 
 
 implementation
 
 procedure TTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel);
 begin
+  if Figure <> nil then FileWasChanged := True;
 end;
 
 function TTool.GetFigure: TFigure;
@@ -267,9 +269,11 @@ begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     CurrentTool.thickness := (Sender as TSpinEdit).Value
   else
-    for i:=0 to High(Figures) do
+    for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         Figures[i].thickness := (Sender as TSpinEdit).Value;
+      FileWasChanged := True;
+    end;
   InvalidateHandler;
 end;
 
@@ -296,9 +300,11 @@ begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TRoundRectTool).roundingRadiusX := (Sender as TSpinEdit).Value
   else
-    for i:=0 to High(Figures) do
+    for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         (Figures[i] as TRoundRect).roundingRadiusX := (Sender as TSpinEdit).Value;
+      FileWasChanged := True;
+    end;
   InvalidateHandler;
 end;
 
@@ -327,9 +333,11 @@ begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TRoundRectTool).roundingRadiusY := (Sender as TSpinEdit).Value
   else
-    for i:=0 to High(Figures) do
+    for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         (Figures[i] as TRoundRect).roundingRadiusY := (Sender as TSpinEdit).Value;
+      FileWasChanged := True;
+    end;
   InvalidateHandler;
 end;
 
@@ -358,9 +366,11 @@ begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     CurrentTool.penStyle := TFPPenStyle((sender as TComboBox).ItemIndex)
   else
-    for i:=0 to High(Figures) do
+    for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         Figures[i].penStyle := TFPPenStyle((sender as TComboBox).ItemIndex);
+      FileWasChanged := True;
+    end;
   InvalidateHandler;
 
 end;
@@ -418,9 +428,11 @@ begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TFilledFigureTool).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex)
   else
-    for i:=0 to High(Figures) do
+    for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         (Figures[i] as TFilledFigure).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex);
+      FileWasChanged := True;
+    end;
   InvalidateHandler;
 
 end;
@@ -475,7 +487,6 @@ end;
 procedure TVerticesNumberParameter.AddEditor(APanel: TPanel; Value: Integer; Selector: Boolean);
 var
   NumOfVerticesEdit: TSpinEdit;
-  /////
 begin
   NumOfVerticesEdit := TSpinEdit.Create(APanel);
   With NumOfVerticesEdit do begin
@@ -497,9 +508,11 @@ begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TPolygonTool).NumOfVertices := (Sender as TSpinEdit).Value
   else
-    for i:=0 to High(Figures) do
+    for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
        (Figures[i] as TPolygon).NumOfVertices := (Sender as TSpinEdit).Value;
+      FileWasChanged := True;
+    end;
   InvalidateHandler;
 end;
 
@@ -584,26 +597,27 @@ begin
   DestroyPanelHandler;
   CreatePanelHandler;
   SetLength(CommonParams,0);
-  first := True;                                                                                   //выделить2 раза полиган и линию баг
+  first := True;
   for i := 0 to High(Figures) do begin
     if Figures[i].Selected then begin
       for j := 0 to high(ToolRegistry) do begin
         if Figures[i].ClassName = ToolRegistry[j].FigureClassName then begin
-          if first then begin                                     //CommonParams[0] := ToolRegistry[j].Parameters[k].AddEditor(APanel,0);
+          if first then begin
             CommonParams := ToolRegistry[j].Parameters;
             first := false;
           end else begin
             for m:= 0 to high(CommonParams) do begin
               found := false;
               for k := 0 to high(ToolRegistry[j].Parameters) do begin
-                if ToolRegistry[j].Parameters[k].ClassName = CommonParams[m].ClassName then
-                  found := true;
+                if CommonParams[m] <> nil then
+                  if ToolRegistry[j].Parameters[k].ClassName = CommonParams[m].ClassName then
+                    found := true;
               end;
               if not found then CommonParams[m] := nil;
             end;
           end;
         end;
-      end;                                                                                                     ///TOOLREGISTRY
+      end;
     end;
   end;
   For i:= high(CommonParams) downto 0 do
@@ -713,10 +727,10 @@ begin
   Parameters[1] := TPenStyleParameter.Create;
   Parameters[2] := TBrushStyleParameter.Create;
   Parameters[3] := TXRoundingParameter.Create;
-  Parameters[4] := TYRoundingParameter.Create;                                                                            ///////добавить наследование с постоянной длиной массива параметерс
+  Parameters[4] := TYRoundingParameter.Create;
   for i := High(Parameters) downto 0 do
     Parameters[i].AddEditor(APanel, 0, False);
-  ToDefaultParams;                                                                                                  //get set params поработать
+  ToDefaultParams;
 end;
 
 procedure TLineTool.MouseDown(X, Y: Integer);
@@ -798,6 +812,7 @@ begin
     CanvasMove(dX, dY)
   else
     prevCrds := ScrToWorld(X,Y);
+  FileWasChanged := True;
 end;
 
 constructor TDragTool.Create;
