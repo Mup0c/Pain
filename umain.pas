@@ -16,6 +16,7 @@ type
   TMainScreen = class(TForm)
     ColorDialog: TColorDialog;
     DrawGrid: TDrawGrid;
+    MenuOpen: TMenuItem;
     MenuSave: TMenuItem;
     MenuSaveAs: TMenuItem;
     ScaleEdit: TFloatSpinEdit;
@@ -44,6 +45,7 @@ type
     RowsEdit: TSpinEdit;
     ToolPanel: TPanel;
     SaveImageDialog: TSaveDialog;
+    OpenImageDialog: TOpenDialog;
     procedure ColsEditChange(Sender: TObject);
     procedure DrawGridDblClick(Sender: TObject);
     procedure DrawGridMouseDown(Sender: TObject; Button: TMouseButton;
@@ -56,6 +58,7 @@ type
     procedure MenuAboutClick(Sender: TObject);
     procedure MenuClearClick(Sender: TObject);
     procedure MenuFullExtentClick(Sender: TObject);
+    procedure MenuOpenClick(Sender: TObject);
     procedure MenuSaveAsClick(Sender: TObject);
     procedure MenuSaveClick(Sender: TObject);
     procedure WriteToFile(AFileName: string);
@@ -138,6 +141,80 @@ begin
     Scale := AScale;
     SetCanvasPosition(imageBounds.Left - 5/scale,imageBounds.Top - 5/scale);
     PaintField.Invalidate;
+  end;
+end;
+
+procedure TMainScreen.MenuOpenClick(Sender: TObject);
+var
+ f: TextFile;
+ i, j, NumOfFigures, NumOfParameters: Integer;
+ FileSignature, FigureName: String;
+ Parameters: StrArr;
+ b: TDoubleRect;
+begin
+  OpenImageDialog := TOpenDialog.Create(Self);
+  with OpenImageDialog do begin
+    InitialDir := GetCurrentDir;
+    Filter     := 'Paint Emulator Format|*.pef|';
+    Title      := 'Open File';
+    DefaultExt := 'pef';
+  end;
+  LastSavedFileName := OpenImageDialog.FileName;
+  if OpenImageDialog.Execute then begin
+    AssignFile(f, OpenImageDialog.FileName);
+    Reset(f);
+    Readln(f, FileSignature);
+    if (FileSignature <> Signature) then begin
+      ShowMessage('Invalid file');
+      CloseFile(f);
+      Exit;
+    end;
+    Readln(f, NumOfFigures);
+    CurrentTool.Figure := nil;
+    SetLength(Figures, NumOfFigures);
+    for i := 0 to high(Figures) do begin
+      Readln(f, FigureName);
+      case FigureName of
+        'TPolyline':
+          begin
+            Figures[i] := TPolyline.Create;
+            NumOfParameters := 4;
+          end;
+        'TLine':
+          begin
+            Figures[i] := TLine.Create;
+            NumOfParameters := 4;
+          end;
+        'TRectangle':
+          begin
+            Figures[i] := TRectangle.Create;
+            NumOfParameters := 6;
+          end;
+        'TEllipse':
+          begin
+            Figures[i] := TEllipse.Create;
+            NumOfParameters := 6;
+          end;
+        'TRoundRect':
+          begin
+            Figures[i] := TRoundRect.Create;
+            NumOfParameters := 8;
+          end;
+        'TPolygon':
+          begin
+            Figures[i] := TPolygon.Create;
+            NumOfParameters := 7;
+          end;
+      end;
+      SetLength(Parameters, NumOfParameters);
+      for j := 0 to High(Parameters) do
+        Readln(f, Parameters[j]);
+      Figures[i].Load(Parameters);
+    end;
+    CloseFile(f);
+    SetScale(1,0,0);
+    SetCanvasPosition(0,0);
+    MainScreen.Invalidate;
   end;
 end;
 

@@ -5,7 +5,8 @@ unit UFigures;
 interface
 
 uses
-  UTransform, windows, Classes, SysUtils, Graphics, FPCanvas, LCL, math, TypInfo;
+  UTransform, windows, Classes, SysUtils, Graphics, FPCanvas, LCL, math, TypInfo,
+  Strutils;
 
 type
 
@@ -25,6 +26,7 @@ type
     procedure AddPoint(X, Y: Integer; first: Boolean); virtual; abstract;
     function IsIntersect(ARect: TDoubleRect): boolean; virtual; abstract;
     function Save: StrArr; virtual;
+    procedure Load(AParameters: StrArr); virtual;
   end;
 
   TTwoPointFigure = class(TFigure)
@@ -36,6 +38,7 @@ type
     brushColour: TColor;
     brushStyle: TFPBrushStyle;
     function Save: StrArr; override;
+    procedure Load(AParameters: StrArr); override;
   end;
 
   TPolyline = class(TFigure)
@@ -45,6 +48,7 @@ type
     procedure AddPoint(X, Y: Integer; first: Boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
     function Save: StrArr; override;
+    procedure Load(AParameters: StrArr); override;
   end;
 
   TRectangle = class(TFilledFigure)
@@ -71,6 +75,7 @@ type
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
     function Save: StrArr; override;
+    procedure Load(AParameters: StrArr); override;
   end;
 
   TPolygon = class(TFilledFigure)
@@ -80,12 +85,89 @@ type
     procedure DrawFigure(Canvas: TCanvas; UsingBrush: boolean); override;
     function IsIntersect(ARect: TDoubleRect): boolean; override;
     function Save: StrArr; override;
+    procedure Load(AParameters: StrArr); override;
   end;
 
 var
   Figures: array of TFigure;
 
 implementation
+
+function GetNumber(AString: string; k: integer): String;
+begin
+  Result := '';
+  while (AString[k] <> ' ') do begin
+    Result += AString[k];
+    Inc(k);
+  end;
+end;
+
+procedure TPolyline.Load(AParameters: StrArr);
+var
+  i, pointNumber: integer;
+  p: String;
+begin
+  i := 1;
+  pointNumber := 0;
+  while i <  Length(AParameters[0]) do begin
+    SetLength(Vertices, Length(Vertices) + 1);
+    p := GetNumber(AParameters[0], i);
+    i += Length(p) + 1;
+    Vertices[PointNumber].X := StrToFloat(p);
+    p := GetNumber(AParameters[0], i);
+    i += Length(p) + 1;
+    Vertices[PointNumber].Y := StrToFloat(p);
+    Inc(PointNumber);
+  end;
+  thickness := StrToInt(AParameters[1]);
+  penStyle := TFPPenStyle(GetEnumValue(TypeInfo(TFPPenStyle), AParameters[2]));
+  penColor := StringToColor(AParameters[3]);
+end;
+
+procedure TFilledFigure.Load(AParameters: StrArr);
+begin
+  Inherited;
+  brushStyle := TBrushStyle(GetEnumValue(TypeInfo(TBrushStyle), AParameters[4]));
+  brushColor := StringToColor(AParameters[5]);
+end;
+
+
+procedure TFigure.Load(AParameters: StrArr);
+var
+  i: integer;
+  p: String;
+begin
+  i := 1;
+  p := GetNumber(AParameters[0], i);
+  i += Length(p) + 1;
+  Bounds.Top := StrToFloat(p);
+  p := GetNumber(AParameters[0], i);
+  i += Length(p) + 1;
+  Bounds.Left := StrToFloat(p);
+  p := GetNumber(AParameters[0], i);
+  i += Length(p) + 1;
+  Bounds.Bottom := StrToFloat(p);
+  p := GetNumber(AParameters[0], i);
+  i += Length(p) + 1;
+  Bounds.Right := StrToFloat(p);
+  thickness := StrToInt(AParameters[1]);
+  penStyle := TFPPenStyle(GetEnumValue(TypeInfo(TFPPenStyle), AParameters[2]));
+  penColor := StringToColor(AParameters[3]);
+end;
+
+procedure TRoundRect.Load(AParameters: StrArr);
+begin
+  Inherited;
+  roundingRadiusX := StrToInt(AParameters[High(AParameters) - 1]);
+  roundingRadiusY := StrToInt(AParameters[High(AParameters)]);;
+end;
+
+procedure TPolygon.Load(AParameters: StrArr);
+begin
+  Inherited;
+  numOfVertices := StrToInt(AParameters[High(AParameters)]);
+end;
+
 
 function TFigure.Save: StrArr;
 begin
@@ -104,11 +186,14 @@ end;
 function TPolyLine.Save: StrArr;
 var
   i: integer;
+  verticesInStr: String;
 begin
   SetLength(Result, 5);
+  verticesInStr := '';
+  for i := 0 to High(vertices) do
+    verticesInStr := verticesInStr + FloatToStr(vertices[i].X) + ' ' + FloatToStr(vertices[i].Y) + ' ';
   Result[0] := ClassName;
-  for i := Low(vertices) to High(vertices) do
-    Result[1] := Result[1] + ' ' + FloatToStr(vertices[i].X) + ' ' + FloatToStr(vertices[i].Y);
+  Result[1] := verticesInStr;
   Result[2] := IntToStr(thickness);
   Result[3] := GetEnumName(TypeInfo(TFPPenStyle),ord(penStyle));
   Result[4] := ColorToString(penColor);
@@ -138,7 +223,7 @@ Inherited;
   Result := Inherited;
   SetLength(Result, Length(Result) + 1);
   Result[High(Result)] := IntToStr(numOfVertices);
-end;                                                   /////////////////////////////////////ON EXIT CLICK спросить сохранить ли
+end;
 
 
 procedure TTwoPointFigure.Move(dX, dY: double);

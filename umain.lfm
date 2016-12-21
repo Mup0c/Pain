@@ -1,7 +1,7 @@
 object MainScreen: TMainScreen
-  Left = 1364
+  Left = 1363
   Height = 608
-  Top = 541
+  Top = 547
   Width = 1035
   Caption = 'Paint alpha dark_moon_edition'
   ClientHeight = 588
@@ -257,6 +257,10 @@ object MainScreen: TMainScreen
     top = 80
     object MenuFile: TMenuItem
       Caption = 'File'
+      object MenuOpen: TMenuItem
+        Caption = 'Open'
+        OnClick = MenuOpenClick
+      end
       object MenuFullExtent: TMenuItem
         Caption = 'FullExtent'
         OnClick = MenuFullExtentClick
