@@ -159,7 +159,6 @@ begin
     Title      := 'Open File';
     DefaultExt := 'pef';
   end;
-  LastSavedFileName := OpenImageDialog.FileName;
   if OpenImageDialog.Execute then begin
     AssignFile(f, OpenImageDialog.FileName);
     Reset(f);
@@ -211,6 +210,10 @@ begin
         Readln(f, Parameters[j]);
       Figures[i].Load(Parameters);
     end;
+    LastSavedFileName := OpenImageDialog.FileName;
+    ImageName := OpenImageDialog.FileName;
+    FileWasChanged:= false;
+    UpdateFileName;
     CloseFile(f);
     SetScale(1,0,0);
     SetCanvasPosition(0,0);

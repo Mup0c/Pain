@@ -445,20 +445,22 @@ var
   i: Integer;
   x, y: double;
 begin
-  x := Vertices[0].x;
-  y := Vertices[0].y;
-  bnds := DoubleRect(x,y,x,y);
-  for i := 0 to numOfVertices - 1 do begin
-    x := Vertices[i].x;
-    y := Vertices[i].y;
-    If x < bnds.Left then
-      bnds.Left := x;
-    If y < bnds.Top then
-      bnds.Top := y;
-    If x > bnds.Right then
-      bnds.Right := x;
-    If y > bnds.Bottom then
-      bnds.Bottom := y;
+  if Vertices <> nil then begin
+    x := Vertices[0].x;
+    y := Vertices[0].y;
+    bnds := DoubleRect(x,y,x,y);
+    for i := 0 to numOfVertices - 1 do begin
+      x := Vertices[i].x;
+      y := Vertices[i].y;
+      If x < bnds.Left then
+        bnds.Left := x;
+      If y < bnds.Top then
+        bnds.Top := y;
+      If x > bnds.Right then
+        bnds.Right := x;
+      If y > bnds.Bottom then
+        bnds.Bottom := y;
+    end;
   end;
   Result := bnds;
 end;
