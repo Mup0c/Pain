@@ -16,6 +16,7 @@ type
   TMainScreen = class(TForm)
     ColorDialog: TColorDialog;
     DrawGrid: TDrawGrid;
+    MenuRedo: TMenuItem;
     MenuOpen: TMenuItem;
     MenuSave: TMenuItem;
     MenuSaveAs: TMenuItem;
@@ -52,6 +53,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure DrawGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
       aState: TGridDrawState);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure HorizontalScrollBarChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MenuExitClick(Sender: TObject);
@@ -59,6 +61,7 @@ type
     procedure MenuClearClick(Sender: TObject);
     procedure MenuFullExtentClick(Sender: TObject);
     procedure MenuOpenClick(Sender: TObject);
+    procedure MenuRedoClick(Sender: TObject);
     procedure MenuSaveAsClick(Sender: TObject);
     procedure MenuSaveClick(Sender: TObject);
     procedure WriteToFile(AFileName: string);
@@ -290,6 +293,11 @@ end;
    if FileWasChanged then MainScreen.Caption := MainScreen.Caption + '*';
  end;
 
+procedure TMainScreen.MenuRedoClick(Sender: TObject);
+begin
+
+end;
+
 procedure TMainScreen.MenuUndoClick(Sender: TObject);
 begin
   if Length(Figures) > 0 then                             ////
@@ -371,10 +379,14 @@ begin
 end;
 
 procedure TMainScreen.FormCreate(Sender: TObject);
+var i :integer;
 begin
   DrawGridRepaint;
   ButtonInit;
   PanelInit;
+  for i := 0 to high(ToolRegistry) do begin
+    ToolRegistry[i].Init(ToolParameters);
+  end;
   InvalidateHandler:=@PaintField.Invalidate;
   DestroyPanelHandler := @DestroyPanelEditors;
   CreatePanelHandler:= @CreatePanel;
@@ -427,6 +439,26 @@ procedure TMainScreen.DrawGridPrepareCanvas(sender: TObject; aCol,
   aRow: Integer; aState: TGridDrawState);
 begin
   DrawGrid.Canvas.Brush.Color := colors[aCol][aRow];
+end;
+
+procedure TMainScreen.FormCloseQuery(Sender: TObject; var CanClose: boolean);
+var
+  IntMessageDialog: integer;
+begin
+  If FileWasChanged then begin
+      IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo,mbCancel],0);
+      case IntMessageDialog of
+        mrYes:
+          begin
+            MenuSaveAsClick(TObject.Create);
+            CanClose:= True;
+          end;
+        mrNo: CanClose:= True;
+        mrCancel:  CanClose:= False;
+      end;
+    end
+    else
+      CanClose:= True;
 end;
 
 procedure TMainScreen.DrawGridMouseDown(Sender: TObject; Button: TMouseButton;

@@ -7,12 +7,11 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
   ExtCtrls, StdCtrls, Buttons, math, Spin,
-  UFigures, UTransform, LCLType, FPCanvas, UAbout;
+  UFigures, UTransform, LCLType, FPCanvas;
 
 type
 
   TFigureClass = class of TFigure;
-  //TIntegerArray = array of integer;
 
   TParameter = class
     procedure AddLabel(AName: String; APanel: TPanel; Selector: Boolean); virtual;
@@ -260,6 +259,7 @@ begin
     BorderSpacing.Around:= 5;
     Font.Size := 10;
     Caption := AName;
+    Height := 12;
   end;
 end;
 
@@ -609,7 +609,7 @@ begin
             for m:= 0 to high(CommonParams) do begin
               found := false;
               for k := 0 to high(ToolRegistry[j].Parameters) do begin
-                if CommonParams[m] <> nil then
+                if (CommonParams[m] <> nil) and (ToolRegistry[j] <> nil) then
                   if ToolRegistry[j].Parameters[k].ClassName = CommonParams[m].ClassName then
                     found := true;
               end;
@@ -631,43 +631,45 @@ var i,j,k,m: Integer;
   th: Double;
   first,found: Boolean;
 begin
-  with Figure.bounds do begin
-    if (Left = Right) or (Top = Bottom) then begin
-      Top -= 1/scale;
-      Left -= 1/scale;
-      Bottom += 1/scale;
-      Right += 1/scale;
+  if  figure <> nil then begin
+    with Figure.bounds do begin
+      if (Left = Right) or (Top = Bottom) then begin
+        Top -= 1/scale;
+        Left -= 1/scale;
+        Bottom += 1/scale;
+        Right += 1/scale;
+      end;
     end;
+    if not (ssCtrl in Shift) then
+      UnselectAll;
+    for i := High(Figures) downto 0 do begin
+      th := Figures[i].thickness/scale;
+      with figure.bounds do begin
+        if Left < Right then
+          boundsWithWidth := DoubleRect(Left - (th/2), Top, Right + (th/2), Bottom)
+        else
+          boundsWithWidth := DoubleRect(Left + (th/2), Top, Right - (th/2), Bottom);
+        if Top < Bottom then
+          boundsWithWidth := DoubleRect(boundsWithWidth.Left, Top - (th/2),
+                                        boundsWithWidth.Right, Bottom + (th/2))
+        else
+          boundsWithWidth := DoubleRect(boundsWithWidth.Left, Top + (th/2),
+                                        boundsWithWidth.Right, Bottom - (th/2));
+      end;
+      if Figures[i].IsIntersect(boundsWithWidth) then begin
+        if ssCtrl in Shift then
+          Figures[i].Selected := not Figures[i].Selected
+        else
+          Figures[i].Selected := true;
+        if (abs(Figure.bounds.Left - Figure.bounds.Right) < 4/scale) and
+           (abs(Figure.bounds.Top - Figure.bounds.Bottom) < 4/scale)
+        then
+          break;
+      end;
+    end;
+    Figure := nil;
+    FindAndAddCommonParameterEditors(Apanel);
   end;
-  if not (ssCtrl in Shift) then
-    UnselectAll;
-  for i := High(Figures) downto 0 do begin
-    th := Figures[i].thickness/scale;
-    with figure.bounds do begin
-      if Left < Right then
-        boundsWithWidth := DoubleRect(Left - (th/2), Top, Right + (th/2), Bottom)
-      else
-        boundsWithWidth := DoubleRect(Left + (th/2), Top, Right - (th/2), Bottom);
-      if Top < Bottom then
-        boundsWithWidth := DoubleRect(boundsWithWidth.Left, Top - (th/2),
-                                      boundsWithWidth.Right, Bottom + (th/2))
-      else
-        boundsWithWidth := DoubleRect(boundsWithWidth.Left, Top + (th/2),
-                                      boundsWithWidth.Right, Bottom - (th/2));
-    end;
-    if Figures[i].IsIntersect(boundsWithWidth) then begin
-      if ssCtrl in Shift then
-        Figures[i].Selected := not Figures[i].Selected
-      else
-        Figures[i].Selected := true;
-      if (abs(Figure.bounds.Left - Figure.bounds.Right) < 4/scale) and
-         (abs(Figure.bounds.Top - Figure.bounds.Bottom) < 4/scale)
-      then
-        break;
-    end;
-  end;
-  Figure := nil;
-  FindAndAddCommonParameterEditors(Apanel);
 end;
 
 procedure TSelectorTool.Init(APanel: TPanel);
