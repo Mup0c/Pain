@@ -259,7 +259,7 @@ begin
     BorderSpacing.Around:= 5;
     Font.Size := 10;
     Caption := AName;
-    Height := 12;
+    Height := 15;
   end;
 end;
 
@@ -808,13 +808,13 @@ begin
     if Figures[i].Selected then begin
       Figures[i].Move(dX,dY);
       anySelected:= true;
+      FileWasChanged := True;
     end;
   end;
   if not anySelected then
     CanvasMove(dX, dY)
   else
     prevCrds := ScrToWorld(X,Y);
-  FileWasChanged := True;
 end;
 
 constructor TDragTool.Create;

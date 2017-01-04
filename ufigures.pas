@@ -158,14 +158,14 @@ end;
 procedure TRoundRect.Load(AParameters: StrArr);
 begin
   Inherited;
-  roundingRadiusX := StrToInt(AParameters[High(AParameters) - 1]);
-  roundingRadiusY := StrToInt(AParameters[High(AParameters)]);;
+  roundingRadiusX := StrToInt(AParameters[6]);
+  roundingRadiusY := StrToInt(AParameters[7]);
 end;
 
 procedure TPolygon.Load(AParameters: StrArr);
 begin
   Inherited;
-  numOfVertices := StrToInt(AParameters[High(AParameters)]);
+  numOfVertices := StrToInt(AParameters[6]);
 end;
 
 
@@ -219,7 +219,7 @@ end;
 
 function TPolygon.Save: StrArr;
 begin
-Inherited;
+  Inherited;
   Result := Inherited;
   SetLength(Result, Length(Result) + 1);
   Result[High(Result)] := IntToStr(numOfVertices);

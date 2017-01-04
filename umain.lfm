@@ -1,11 +1,11 @@
 object MainScreen: TMainScreen
-  Left = 646
-  Height = 505
-  Top = 255
-  Width = 816
+  Left = 641
+  Height = 777
+  Top = 231
+  Width = 1223
   Caption = 'Paint alpha dark_moon_edition'
-  ClientHeight = 485
-  ClientWidth = 816
+  ClientHeight = 757
+  ClientWidth = 1223
   Color = clWhite
   Menu = MainMenu
   OnCloseQuery = FormCloseQuery
@@ -19,9 +19,9 @@ object MainScreen: TMainScreen
     AnchorSideBottom.Control = HorizontalScrollBar
     Cursor = crSizeAll
     Left = 96
-    Height = 428
+    Height = 700
     Top = 0
-    Width = 0
+    Width = 1112
     Align = alCustom
     Anchors = [akTop, akLeft, akRight, akBottom]
     DragCursor = crSizeNWSE
@@ -36,12 +36,12 @@ object MainScreen: TMainScreen
   object ToolPanel: TPanel
     AnchorSideBottom.Control = DrawGrid
     Left = 0
-    Height = 443
+    Height = 715
     Top = 0
     Width = 96
     Align = alCustom
     Anchors = [akTop, akLeft, akBottom]
-    ClientHeight = 443
+    ClientHeight = 715
     ClientWidth = 96
     Color = clMenuBar
     ParentColor = False
@@ -51,7 +51,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Side = asrBottom
       Left = 48
       Height = 23
-      Top = 409
+      Top = 681
       Width = 47
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 10
@@ -66,7 +66,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Side = asrBottom
       Left = 48
       Height = 23
-      Top = 369
+      Top = 641
       Width = 47
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 40
@@ -80,7 +80,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Control = RowsEdit
       Left = 56
       Height = 16
-      Top = 352
+      Top = 624
       Width = 27
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 1
@@ -97,7 +97,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Control = ColsEdit
       Left = 50
       Height = 16
-      Top = 392
+      Top = 664
       Width = 41
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 1
@@ -115,7 +115,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Side = asrBottom
       Left = 2
       Height = 16
-      Top = 352
+      Top = 624
       Width = 45
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 74
@@ -132,7 +132,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Control = ScaleEdit
       Left = 21
       Height = 17
-      Top = 300
+      Top = 572
       Width = 54
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 5
@@ -149,7 +149,7 @@ object MainScreen: TMainScreen
       AnchorSideBottom.Control = PaletteLabel
       Left = 17
       Height = 25
-      Top = 322
+      Top = 594
       Width = 58
       Anchors = [akLeft, akBottom]
       BorderSpacing.Bottom = 5
@@ -173,8 +173,8 @@ object MainScreen: TMainScreen
     AnchorSideTop.Side = asrBottom
     Left = 0
     Height = 42
-    Top = 443
-    Width = 816
+    Top = 715
+    Width = 1223
     Align = alBottom
     AutoEdit = False
     Color = clDefault
@@ -200,7 +200,7 @@ object MainScreen: TMainScreen
     AnchorSideBottom.Control = DrawGrid
     Left = 10
     Height = 35
-    Top = 397
+    Top = 669
     Width = 35
     Alignment = taLeftJustify
     Anchors = [akLeft, akBottom]
@@ -214,7 +214,7 @@ object MainScreen: TMainScreen
     AnchorSideBottom.Control = DrawGrid
     Left = 2
     Height = 35
-    Top = 388
+    Top = 660
     Width = 35
     Anchors = [akLeft, akBottom]
     BorderSpacing.Bottom = 20
@@ -229,8 +229,8 @@ object MainScreen: TMainScreen
     AnchorSideBottom.Control = DrawGrid
     Left = 96
     Height = 15
-    Top = 428
-    Width = 0
+    Top = 700
+    Width = 1112
     Anchors = [akLeft, akRight, akBottom]
     LargeChange = 100
     Max = 0
@@ -240,8 +240,8 @@ object MainScreen: TMainScreen
   end
   object VerticalScrollBar: TScrollBar
     AnchorSideBottom.Control = DrawGrid
-    Left = -15
-    Height = 428
+    Left = 1208
+    Height = 700
     Top = 0
     Width = 15
     Anchors = [akTop, akRight, akBottom]

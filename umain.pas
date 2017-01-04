@@ -269,6 +269,7 @@ procedure TMainScreen.WriteToFile(AFileName: string);
 var
   f: TextFile;
   i,j: integer;
+  figureStr: StrArr;
 begin
   AssignFile(f,AFileName);
   DeleteFile(AFileName);
@@ -277,8 +278,9 @@ begin
   Writeln(f, length(Figures));
   for i := Low(Figures) to High(Figures) do
   begin
-    for j := low((Figures[i]).Save) to high((Figures[i]).Save) do
-      Writeln(f,(Figures[i]).Save[j]);
+    figureStr := Figures[i].Save;
+    for j := 0 to High(figureStr) do
+      Writeln(f, figureStr[j]);
   end;
   CloseFile(f);
   ImageName := AFileName;
@@ -288,9 +290,12 @@ begin
 end;
 
  procedure TMainScreen.UpdateFileName;
+ var
+   tmpCaption: String;
  begin
-   MainScreen.Caption := 'paint_dark_moon_editi0n - ' + ImageName;
-   if FileWasChanged then MainScreen.Caption := MainScreen.Caption + '*';
+   tmpCaption := 'paint_dark_moon_editi0n - ' + ImageName;
+   if FileWasChanged then tmpCaption := tmpCaption + '*';
+   MainScreen.Caption := tmpCaption;
  end;
 
 procedure TMainScreen.MenuRedoClick(Sender: TObject);
@@ -300,9 +305,7 @@ end;
 
 procedure TMainScreen.MenuUndoClick(Sender: TObject);
 begin
-  if Length(Figures) > 0 then                             ////
-    SetLength(Figures,length(Figures) - 1);
-  MainScreen.Repaint;
+
 end;
 
 procedure TMainScreen.MenuExitClick(Sender: TObject);
@@ -480,6 +483,8 @@ begin
       If Figures[i].Selected then Figures[i].brushColor:= colors[aCol][aRow];
     end;
   end;
+  if CurrentTool.ClassName = TSelectorTool.ClassName then
+    FileWasChanged := True;
   PaintField.Invalidate;
 end;
 
@@ -576,8 +581,6 @@ begin
       AdjustImageBounds(b.Left, b.Top);
       AdjustImageBounds(b.Right, b.Bottom);
     end;
-    if FileWasChanged then
-      UpdateFileName;
     PaintField.Invalidate;
   end;
 end;
@@ -616,6 +619,7 @@ begin
   ScrollsChangingByCode:= true;
     SetScroolBarsParameters(canvasBounds);
   ScrollsChangingByCode:= false;
+  UpdateFileName;
 end;
 
 procedure TMainScreen.SetScroolBarsParameters(ARect: TDoubleRect);
