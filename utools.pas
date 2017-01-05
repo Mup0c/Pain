@@ -55,6 +55,8 @@ type
     procedure RoundingYEditChange(Sender: TObject);
   end;
 
+  ParamArr = array of TParameter;
+
   TTool = class
     FigureClassName: shortstring;
     Parameters: array of TParameter;
@@ -67,6 +69,7 @@ type
     ParametersAvailable: boolean;
     function GetFigure: TFigure; virtual;
     procedure SetParams; virtual;
+    function GetParamsList: ParamArr; virtual;
     procedure ToDefaultParams; virtual;
     procedure Init(APanel: TPanel); virtual; abstract;
     procedure MouseDown(X, Y: Integer); virtual; abstract;
@@ -78,6 +81,7 @@ type
     brushColour: TColor;
     brushStyle: TFPBrushStyle;
     procedure SetParams; override;
+    function GetParamsList: ParamArr; override;
     procedure ToDefaultParams; override;
   end;
 
@@ -109,6 +113,7 @@ type
     roundingRadiusX, roundingRadiusY: integer;
     constructor Create;
     procedure SetParams; override;
+    function GetParamsList: ParamArr; override;
     procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
@@ -118,6 +123,7 @@ type
     numOfVertices: integer;
     constructor Create;
     procedure SetParams; override;
+    function GetParamsList: ParamArr; override;
     procedure ToDefaultParams; override;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
@@ -154,7 +160,7 @@ type
   end;
 
   TSelectorTool = class(TTool)
-    CommonParams: array of TParameter;
+    CommonParams: ParamArr;
     constructor Create;
     procedure Init(APanel: TPanel); override;
     procedure MouseDown(X, Y: Integer); override;
@@ -196,11 +202,26 @@ begin
   Figure.penStyle := penStyle;
 end;
 
+function TTool.GetParamsList: ParamArr;
+begin
+  SetLength(Result, 2);
+  Result[0] := TWidthParameter.Create;
+  Result[1] := TPenStyleParameter.Create;
+end;
+
 procedure TFilledFigureTool.SetParams;
 begin
   Inherited;
   (Figure as TFilledFigure).brushColor := brushColor;
   (Figure as TFilledFigure).brushStyle := brushStyle;
+end;
+
+function TFilledFigureTool.GetParamsList: ParamArr;
+begin
+  Inherited;
+  Result := Inherited;
+  SetLength(Result, Length(Result) + 1);
+  Result[High(Result)] := TBrushStyleParameter.Create;
 end;
 
 procedure TRoundRectTool.SetParams;
@@ -210,10 +231,27 @@ begin
   (Figure as TRoundRect).roundingRadiusY := roundingRadiusY;
 end;
 
+function TRoundRectTool.GetParamsList: ParamArr;
+begin
+  Inherited;
+  Result := Inherited;
+  SetLength(Result, Length(Result) + 1);
+  Result[High(Result)] := TVerticesNumberParameter.Create;
+end;
+
 procedure TPolygonTool.SetParams;
 begin
   Inherited;
   (Figure as TPolygon).numOfVertices := numOfVertices;
+end;
+
+function TPolygonTool.GetParamsList: ParamArr;
+begin
+  Inherited;
+  Result := Inherited;
+  SetLength(Result, Length(Result) + 2);
+  Result[High(Result) - 1] := TXRoundingParameter.Create;
+  Result[High(Result)] := TYRoundingParameter.Create;
 end;
 
 procedure TTool.ToDefaultParams;
@@ -603,13 +641,13 @@ begin
       for j := 0 to high(ToolRegistry) do begin
         if Figures[i].ClassName = ToolRegistry[j].FigureClassName then begin
           if first then begin
-            CommonParams := ToolRegistry[j].Parameters;
+            CommonParams := ToolRegistry[j].GetParamsList;
             first := false;
           end else begin
             for m:= 0 to high(CommonParams) do begin
               found := false;
               for k := 0 to high(ToolRegistry[j].Parameters) do begin
-                if (CommonParams[m] <> nil) and (ToolRegistry[j] <> nil) then
+                if (CommonParams[m] <> nil) then
                   if ToolRegistry[j].Parameters[k].ClassName = CommonParams[m].ClassName then
                     found := true;
               end;
@@ -620,7 +658,7 @@ begin
       end;
     end;
   end;
-  For i:= high(CommonParams) downto 0 do
+  for i:= high(CommonParams) downto 0 do
     if CommonParams[i] <> nil then
       CommonParams[i].AddEditor(APanel,0, True);
 end;
