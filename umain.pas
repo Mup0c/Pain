@@ -103,6 +103,7 @@ var
   Signature: string = '@PaintEmulatorFormat';
   ToolParameters: TPanel;
   ImageName, LastSavedFileName: string;
+  CanExit: boolean;
 
 implementation
 
@@ -229,6 +230,7 @@ var
   f: TextFile;
   Reply, BoxStyle: Integer;
 begin
+  CanExit := false;
   SaveImageDialog := TSaveDialog.Create(self);
   with SaveImageDialog do begin
     InitialDir := GetCurrentDir;
@@ -243,6 +245,7 @@ begin
       Reply := Application.MessageBox('Overwrite file?', 'File already exists', BoxStyle);
       if (Reply = IDYES) then begin
         WriteToFile(SaveImageDialog.FileName);
+        CanExit:= true;
       end
       else begin
         SaveImageDialog.Free;
@@ -252,6 +255,7 @@ begin
     end
     else begin
       WriteToFile(SaveImageDialog.FileName);
+      CanExit:= true;
     end;
   end;
   SaveImageDialog.Free;
@@ -312,16 +316,35 @@ procedure TMainScreen.MenuExitClick(Sender: TObject);
 var
   IntMessageDialog: integer;
 begin
-  If FileWasChanged then begin
-    IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo],0);
+  if FileWasChanged then begin
+    IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo,mbCancel],0);
     if IntMessageDialog = mrYes then begin
-        MenuSaveAsClick(TObject.Create);
+      MenuSaveAsClick(TObject.Create);
+      if CanExit then
         Application.Terminate;
-      end else
+    end else
+      if IntMessageDialog = mrNo then
         Application.Terminate;
-  end
-  else
+  end else
     Application.Terminate;
+end;
+
+procedure TMainScreen.FormCloseQuery(Sender: TObject; var CanClose: boolean);
+var
+  IntMessageDialog: integer;
+begin
+  CanClose := False;
+  if FileWasChanged then begin
+    IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo,mbCancel],0);
+    if IntMessageDialog = mrYes then begin
+      MenuSaveAsClick(TObject.Create);
+      if CanExit then
+        CanClose:= True;
+    end else
+      if IntMessageDialog = mrNo then
+        CanClose:= True;
+  end else
+    CanClose:= True;
 end;
 
 procedure TMainScreen.PanelInit;
@@ -442,26 +465,6 @@ procedure TMainScreen.DrawGridPrepareCanvas(sender: TObject; aCol,
   aRow: Integer; aState: TGridDrawState);
 begin
   DrawGrid.Canvas.Brush.Color := colors[aCol][aRow];
-end;
-
-procedure TMainScreen.FormCloseQuery(Sender: TObject; var CanClose: boolean);
-var
-  IntMessageDialog: integer;
-begin
-  If FileWasChanged then begin
-      IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo,mbCancel],0);
-      case IntMessageDialog of
-        mrYes:
-          begin
-            MenuSaveAsClick(TObject.Create);
-            CanClose:= True;
-          end;
-        mrNo: CanClose:= True;
-        mrCancel:  CanClose:= False;
-      end;
-    end
-    else
-      CanClose:= True;
 end;
 
 procedure TMainScreen.DrawGridMouseDown(Sender: TObject; Button: TMouseButton;
