@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
   ExtCtrls, StdCtrls, Buttons, math, Spin,
-  UFigures, UTransform, LCLType, FPCanvas;
+  UFigures, UTransform, LCLType, FPCanvas, UHistory;
 
 type
 
@@ -130,10 +130,12 @@ type
   end;
 
   TDragTool = class(TTool)
+    anySelected: boolean;
     constructor Create;
     procedure Init(APanel: TPanel); override;
     procedure MouseMove(X, Y: Integer); override;
     procedure MouseDown(X, Y: Integer); override;
+    procedure MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel); override;
   end;
 
   TZoomInTool = class(TTool)
@@ -173,14 +175,14 @@ var
   InvalidateHandler: procedure of Object;
   DestroyPanelHandler,CreatePanelHandler: procedure of Object;
   CurrentTool: TTool;
-  FileWasChanged: boolean;
-
 
 implementation
 
 procedure TTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel);
 begin
-  if Figure <> nil then FileWasChanged := True;
+  if Figure <> nil then begin
+    FileWasChanged := True;
+  end;
 end;
 
 function TTool.GetFigure: TFigure;
@@ -235,8 +237,9 @@ function TRoundRectTool.GetParamsList: ParamArr;
 begin
   Inherited;
   Result := Inherited;
-  SetLength(Result, Length(Result) + 1);
-  Result[High(Result)] := TVerticesNumberParameter.Create;
+  SetLength(Result, Length(Result) + 2);
+  Result[High(Result) - 1] := TXRoundingParameter.Create;
+  Result[High(Result)] := TYRoundingParameter.Create;
 end;
 
 procedure TPolygonTool.SetParams;
@@ -249,9 +252,8 @@ function TPolygonTool.GetParamsList: ParamArr;
 begin
   Inherited;
   Result := Inherited;
-  SetLength(Result, Length(Result) + 2);
-  Result[High(Result) - 1] := TXRoundingParameter.Create;
-  Result[High(Result)] := TYRoundingParameter.Create;
+  SetLength(Result, Length(Result) + 1);
+  Result[High(Result)] := TVerticesNumberParameter.Create;
 end;
 
 procedure TTool.ToDefaultParams;
@@ -306,12 +308,14 @@ var i:integer;
 begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     CurrentTool.thickness := (Sender as TSpinEdit).Value
-  else
+  else begin
     for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         Figures[i].thickness := (Sender as TSpinEdit).Value;
-      FileWasChanged := True;
     end;
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   InvalidateHandler;
 end;
 
@@ -337,12 +341,14 @@ var i:integer;
 begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TRoundRectTool).roundingRadiusX := (Sender as TSpinEdit).Value
-  else
+  else begin
     for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         (Figures[i] as TRoundRect).roundingRadiusX := (Sender as TSpinEdit).Value;
-      FileWasChanged := True;
     end;
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   InvalidateHandler;
 end;
 
@@ -370,12 +376,14 @@ var i:integer;
 begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TRoundRectTool).roundingRadiusY := (Sender as TSpinEdit).Value
-  else
+  else begin
     for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         (Figures[i] as TRoundRect).roundingRadiusY := (Sender as TSpinEdit).Value;
-      FileWasChanged := True;
     end;
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   InvalidateHandler;
 end;
 
@@ -403,14 +411,15 @@ var i:integer;
 begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     CurrentTool.penStyle := TFPPenStyle((sender as TComboBox).ItemIndex)
-  else
+  else begin
     for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         Figures[i].penStyle := TFPPenStyle((sender as TComboBox).ItemIndex);
-      FileWasChanged := True;
     end;
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   InvalidateHandler;
-
 end;
 
 procedure TPenstyleParameter.OnDrawLineStyleItem(Control: TWinControl;
@@ -465,14 +474,15 @@ var i:integer;
 begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TFilledFigureTool).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex)
-  else
+  else begin
     for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
         (Figures[i] as TFilledFigure).brushStyle := TFPBrushStyle((sender as TComboBox).ItemIndex);
-      FileWasChanged := True;
     end;
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   InvalidateHandler;
-
 end;
 
 procedure TBrushStyleParameter.OnDrawBrushStyleItem(
@@ -545,12 +555,14 @@ var i:integer;
 begin
   if CurrentTool.ClassName <> TSelectorTool.ClassName then
     (CurrentTool as TPolygonTool).NumOfVertices := (Sender as TSpinEdit).Value
-  else
+  else begin
     for i:=0 to High(Figures) do begin
       if Figures[i].Selected then
        (Figures[i] as TPolygon).NumOfVertices := (Sender as TSpinEdit).Value;
-      FileWasChanged := True;
     end;
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   InvalidateHandler;
 end;
 
@@ -837,7 +849,6 @@ end;
 procedure TDragTool.MouseMove(X, Y: Integer);
 var i,j: Integer;
   dX,dY:Double;
-  anySelected: boolean;
 begin
   anySelected := False;
   dX := prevCrds.X - ScrToWorld(X,Y).X;
@@ -846,13 +857,20 @@ begin
     if Figures[i].Selected then begin
       Figures[i].Move(dX,dY);
       anySelected:= true;
-      FileWasChanged := True;
     end;
   end;
   if not anySelected then
     CanvasMove(dX, dY)
   else
     prevCrds := ScrToWorld(X,Y);
+end;
+
+procedure TDragTool.MouseUp(X, Y, AWidth, AHeight: Integer; Shift: TShiftState; APanel: TPanel);
+begin
+  if anySelected then begin
+    FileWasChanged := True;
+    History.AddToBuffer;
+  end;
 end;
 
 constructor TDragTool.Create;

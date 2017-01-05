@@ -1,7 +1,7 @@
 object MainScreen: TMainScreen
-  Left = 641
+  Left = 121
   Height = 777
-  Top = 231
+  Top = 141
   Width = 1223
   Caption = 'Paint alpha dark_moon_edition'
   ClientHeight = 757

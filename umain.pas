@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Menus,
   ExtCtrls, ComCtrls, StdCtrls, Buttons, math, Grids, Spin, UAbout,
-  UTools, UFigures, UTransform, LCLType, Types;
+  UTools, UFigures, UTransform, LCLType, Types, UHistory;
 
 type
 
@@ -151,11 +151,20 @@ end;
 procedure TMainScreen.MenuOpenClick(Sender: TObject);
 var
  f: TextFile;
- i, j, NumOfFigures, NumOfParameters: Integer;
+ i, j, NumOfFigures, NumOfParameters, IntMessageDialog: Integer;
  FileSignature, FigureName: String;
  Parameters: StrArr;
  b: TDoubleRect;
 begin
+  if FileWasChanged then begin
+    IntMessageDialog := MessageDLG('Save current Image?', mtConfirmation, [mbYes,mbNo,mbCancel],0);
+    if IntMessageDialog = mrYes then
+      MenuSaveAsClick(TObject.Create)
+    else
+      if IntMessageDialog = mrNo then
+    else
+      exit;
+  end;
   OpenImageDialog := TOpenDialog.Create(Self);
   with OpenImageDialog do begin
     InitialDir := GetCurrentDir;
@@ -217,10 +226,14 @@ begin
     LastSavedFileName := OpenImageDialog.FileName;
     ImageName := OpenImageDialog.FileName;
     FileWasChanged:= false;
+    History.SavedPosition:= History.CurrentPosition;
     UpdateFileName;
     CloseFile(f);
     SetScale(1,0,0);
     SetCanvasPosition(0,0);
+    History.AddToBuffer;
+    History.AvailableUndos:= 0;
+    History.AvailableRedos:= 0;
     MainScreen.Invalidate;
   end;
 end;
@@ -290,6 +303,7 @@ begin
   ImageName := AFileName;
   LastSavedFileName := AFileName;
   FileWasChanged := False;
+  History.SavedPosition:= History.CurrentPosition;
   UpdateFileName;
 end;
 
@@ -304,12 +318,16 @@ end;
 
 procedure TMainScreen.MenuRedoClick(Sender: TObject);
 begin
-
+  History.Redo;
+  UpdateFileName;
+  MainScreen.Invalidate;
 end;
 
 procedure TMainScreen.MenuUndoClick(Sender: TObject);
 begin
-
+  History.Undo;
+  UpdateFileName;
+  MainScreen.Invalidate;
 end;
 
 procedure TMainScreen.MenuExitClick(Sender: TObject);
@@ -486,8 +504,10 @@ begin
       If Figures[i].Selected then Figures[i].brushColor:= colors[aCol][aRow];
     end;
   end;
-  if CurrentTool.ClassName = TSelectorTool.ClassName then
+  if CurrentTool.ClassName = TSelectorTool.ClassName then begin
     FileWasChanged := True;
+    History.AddToBuffer;
+  end;
   PaintField.Invalidate;
 end;
 
@@ -576,6 +596,7 @@ begin
     CurrentTool.MouseUp(X, Y, PaintField.Width, PaintField.Height, Shift, ToolParameters);
     if CurrentTool.Figure <> nil then begin
       SaveFigure(CurrentTool.GetFigure);
+      History.AddToBuffer;
     end;
     for i := 0 to High(Figures) do begin
       b := Figures[i].GetBounds;
@@ -623,6 +644,8 @@ begin
     SetScroolBarsParameters(canvasBounds);
   ScrollsChangingByCode:= false;
   UpdateFileName;
+  MenuUndo.Enabled := History.AvailableUndos > 0;
+  MenuRedo.Enabled := History.AvailableRedos > 0;
 end;
 
 procedure TMainScreen.SetScroolBarsParameters(ARect: TDoubleRect);
